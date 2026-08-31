@@ -88,13 +88,25 @@ fun JobTrackerApp(initialApplicationId: String? = null) {
         }
 
         composable(
+            route = NavRoute.Edit.route,
+            arguments = listOf(navArgument("applicationId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val applicationId = backStackEntry.arguments?.getString("applicationId") ?: ""
+            AddEditApplicationScreen(
+                applicationId = applicationId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
             route = NavRoute.Detail.route,
             arguments = listOf(navArgument("applicationId") { type = NavType.StringType })
         ) { backStackEntry ->
             val applicationId = backStackEntry.arguments?.getString("applicationId") ?: ""
             ApplicationDetailScreen(
                 applicationId = applicationId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToEdit = { id -> navController.navigate(NavRoute.Edit.createRoute(id)) }
             )
         }
     }

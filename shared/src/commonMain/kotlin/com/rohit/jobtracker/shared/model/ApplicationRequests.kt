@@ -11,7 +11,8 @@ data class CreateApplicationRequest(
     val dateApplied: LocalDate,
     val jobLink: String? = null,
     val status: Status = Status.APPLIED,
-    val reminderDays: Int? = null
+    val reminderDays: Int? = null,
+    val salary: String? = null
 )
 
 @Serializable
@@ -22,7 +23,8 @@ data class UpdateApplicationRequest(
     val dateApplied: LocalDate? = null,
     val jobLink: String? = null,
     val status: Status? = null,
-    val reminderDays: Int? = null
+    val reminderDays: Int? = null,
+    val salary: String? = null
 )
 
 @Serializable

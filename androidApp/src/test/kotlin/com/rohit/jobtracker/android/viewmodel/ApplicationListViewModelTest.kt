@@ -44,7 +44,8 @@ class FakeJobTrackerApi(
             jobLink = request.jobLink,
             status = request.status,
             lastUpdated = Instant.parse("2026-08-31T10:00:00Z"),
-            reminderDays = request.reminderDays
+            reminderDays = request.reminderDays,
+            salary = request.salary
         )
         applications.add(app)
         return app
@@ -56,7 +57,9 @@ class FakeJobTrackerApi(
         val updated = current.copy(
             status = request.status ?: current.status,
             company = request.company ?: current.company,
-            role = request.role ?: current.role
+            role = request.role ?: current.role,
+            salary = request.salary ?: current.salary,
+            reminderDays = request.reminderDays ?: current.reminderDays
         )
         applications[index] = updated
         return updated

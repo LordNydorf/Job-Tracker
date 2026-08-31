@@ -41,7 +41,8 @@ class JobTrackerRepositoryImpl : JobTrackerRepository {
         jobLink = row[ApplicationsTable.jobLink],
         status = Status.valueOf(row[ApplicationsTable.status]),
         lastUpdated = row[ApplicationsTable.lastUpdated],
-        reminderDays = row[ApplicationsTable.reminderDays]
+        reminderDays = row[ApplicationsTable.reminderDays],
+        salary = row[ApplicationsTable.salary]
     )
 
     private fun resultRowToNote(row: ResultRow) = Note(
@@ -69,6 +70,7 @@ class JobTrackerRepositoryImpl : JobTrackerRepository {
     override suspend fun createApplication(request: CreateApplicationRequest): Application = dbQuery {
         val newId = UUID.randomUUID().toString()
         val now = Clock.System.now()
+        val trimmedSalary = request.salary?.trim()?.takeIf { s -> s.isNotEmpty() }
 
         ApplicationsTable.insert {
             it[id] = newId
@@ -80,6 +82,7 @@ class JobTrackerRepositoryImpl : JobTrackerRepository {
             it[status] = request.status.name
             it[lastUpdated] = now
             it[reminderDays] = request.reminderDays
+            it[salary] = trimmedSalary
         }
 
         Application(
@@ -91,7 +94,8 @@ class JobTrackerRepositoryImpl : JobTrackerRepository {
             jobLink = request.jobLink?.trim()?.takeIf { link -> link.isNotEmpty() },
             status = request.status,
             lastUpdated = now,
-            reminderDays = request.reminderDays
+            reminderDays = request.reminderDays,
+            salary = trimmedSalary
         )
     }
 
@@ -112,6 +116,9 @@ class JobTrackerRepositoryImpl : JobTrackerRepository {
             request.status?.let { st -> it[status] = st.name }
             if (request.reminderDays != null) {
                 it[reminderDays] = request.reminderDays
+            }
+            request.salary?.let { sal ->
+                it[salary] = sal.trim().takeIf { s -> s.isNotEmpty() }
             }
             it[lastUpdated] = now
         }

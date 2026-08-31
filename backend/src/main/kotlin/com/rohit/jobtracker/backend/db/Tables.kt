@@ -15,6 +15,7 @@ object ApplicationsTable : Table("applications") {
     val status = varchar("status", 50)
     val lastUpdated = timestamp("last_updated")
     val reminderDays = integer("reminder_days").nullable()
+    val salary = varchar("salary", 100).nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

@@ -9,6 +9,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -64,11 +65,14 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
 
+import org.koin.core.parameter.parametersOf
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditApplicationScreen(
+    applicationId: String? = null,
     onNavigateBack: () -> Unit,
-    viewModel: AddEditViewModel = koinViewModel()
+    viewModel: AddEditViewModel = koinViewModel(parameters = { parametersOf(applicationId) })
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -83,7 +87,8 @@ fun AddEditApplicationScreen(
 
     LaunchedEffect(Unit) {
         viewModel.saveSuccessEvent.collect {
-            Toast.makeText(context, "Application saved!", Toast.LENGTH_SHORT).show()
+            val message = if (uiState.isEditMode) "Application updated!" else "Application saved!"
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             onNavigateBack()
         }
     }
@@ -118,7 +123,11 @@ fun AddEditApplicationScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Log Application", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text(
+                            text = if (uiState.isEditMode) "Edit Application" else "Log Application",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
                         Text(
                             text = "Step $currentStep of $totalSteps: ${
                                 when (currentStep) {
@@ -218,7 +227,10 @@ fun AddEditApplicationScreen(
                                 } else {
                                     Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(20.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Save Application", fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = if (uiState.isEditMode) "Update Application" else "Save Application",
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                         }
@@ -227,68 +239,82 @@ fun AddEditApplicationScreen(
             }
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            // Linear Step Indicator
-            LinearProgressIndicator(
-                progress = { currentStep.toFloat() / totalSteps.toFloat() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(3.dp),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-
-            // Animated Step Wizard Content
-            AnimatedContent(
-                targetState = currentStep,
-                transitionSpec = {
-                    if (targetState > initialState) {
-                        (slideInHorizontally(tween(250)) { it } + fadeIn(tween(250)))
-                            .togetherWith(slideOutHorizontally(tween(250)) { -it } + fadeOut(tween(250)))
-                    } else {
-                        (slideInHorizontally(tween(250)) { -it } + fadeIn(tween(250)))
-                            .togetherWith(slideOutHorizontally(tween(250)) { it } + fadeOut(tween(250)))
-                    }
-                },
+        if (uiState.isLoading) {
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .weight(1f)
-            ) { step ->
-                Column(
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                // Linear Step Indicator
+                LinearProgressIndicator(
+                    progress = { currentStep.toFloat() / totalSteps.toFloat() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+
+                // Animated Step Wizard Content
+                AnimatedContent(
+                    targetState = currentStep,
+                    transitionSpec = {
+                        if (targetState > initialState) {
+                            (slideInHorizontally(tween(250)) { it } + fadeIn(tween(250)))
+                                .togetherWith(slideOutHorizontally(tween(250)) { -it } + fadeOut(tween(250)))
+                        } else {
+                            (slideInHorizontally(tween(250)) { -it } + fadeIn(tween(250)))
+                                .togetherWith(slideOutHorizontally(tween(250)) { it } + fadeOut(tween(250)))
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp)
-                ) {
-                    uiState.generalError?.let { error ->
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = error,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.padding(16.dp)
-                            )
+                        .weight(1f)
+                ) { step ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(18.dp)
+                    ) {
+                        uiState.generalError?.let { error ->
+                            Surface(
+                                color = MaterialTheme.colorScheme.errorContainer,
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = error,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
                         }
-                    }
 
-                    when (step) {
-                        1 -> ApplicationStepOne(
-                            company = uiState.company,
-                            role = uiState.role,
-                            companyError = uiState.companyError,
-                            roleError = uiState.roleError,
-                            onCompanyChange = { viewModel.updateCompany(it) },
-                            onRoleChange = { viewModel.updateRole(it) }
-                        )
+                        when (step) {
+                            1 -> ApplicationStepOne(
+                                company = uiState.company,
+                                role = uiState.role,
+                                salary = uiState.salary,
+                                currency = uiState.currency,
+                                companyError = uiState.companyError,
+                                roleError = uiState.roleError,
+                                onCompanyChange = { viewModel.updateCompany(it) },
+                                onRoleChange = { viewModel.updateRole(it) },
+                                onSalaryChange = { viewModel.updateSalary(it) },
+                                onCurrencyChange = { viewModel.updateCurrency(it) }
+                            )
 
                         2 -> ApplicationStepTwo(
                             selectedSource = uiState.source,
@@ -315,4 +341,5 @@ fun AddEditApplicationScreen(
             }
         }
     }
+}
 }

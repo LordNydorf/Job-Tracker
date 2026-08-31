@@ -6,6 +6,7 @@ import com.rohit.jobtracker.shared.api.JobTrackerApi
 import com.rohit.jobtracker.shared.model.CreateApplicationRequest
 import com.rohit.jobtracker.shared.model.Source
 import com.rohit.jobtracker.shared.model.Status
+import com.rohit.jobtracker.shared.model.UpdateApplicationRequest
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -20,6 +21,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 
 data class AddEditUiState(
+    val isEditMode: Boolean = false,
+    val isLoading: Boolean = false,
     val company: String = "",
     val role: String = "",
     val source: Source = Source.WELLFOUND,
@@ -27,6 +30,8 @@ data class AddEditUiState(
     val jobLink: String = "",
     val status: Status = Status.APPLIED,
     val reminderDays: Int? = 7,
+    val salary: String = "",
+    val currency: String = "$",
     val isSaving: Boolean = false,
     val companyError: String? = null,
     val roleError: String? = null,
@@ -34,14 +39,77 @@ data class AddEditUiState(
 )
 
 class AddEditViewModel(
+    private val applicationId: String? = null,
     private val api: JobTrackerApi
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AddEditUiState())
+    private val _uiState = MutableStateFlow(
+        AddEditUiState(isEditMode = !applicationId.isNullOrBlank())
+    )
     val uiState: StateFlow<AddEditUiState> = _uiState.asStateFlow()
 
     private val _saveSuccessEvent = MutableSharedFlow<Unit>()
     val saveSuccessEvent: SharedFlow<Unit> = _saveSuccessEvent.asSharedFlow()
+
+    init {
+        if (!applicationId.isNullOrBlank()) {
+            loadExistingApplication(applicationId)
+        }
+    }
+
+    private fun loadExistingApplication(id: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                val app = api.getApplication(id)
+                if (app != null) {
+                    val (detectedCurrency, detectedSalary) = parseCurrencyAndSalary(app.salary)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isEditMode = true,
+                            company = app.company,
+                            role = app.role,
+                            source = app.source,
+                            dateApplied = app.dateApplied,
+                            jobLink = app.jobLink ?: "",
+                            status = app.status,
+                            reminderDays = app.reminderDays,
+                            currency = detectedCurrency,
+                            salary = detectedSalary
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            generalError = "Application not found"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        generalError = e.message ?: "Failed to load application"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun parseCurrencyAndSalary(rawSalary: String?): Pair<String, String> {
+        if (rawSalary.isNullOrBlank()) return Pair("$", "")
+        val trimmed = rawSalary.trim()
+        val knownCurrencies = listOf("₹", "€", "£", "AED", "CA$", "A$", "S$", "$")
+        for (c in knownCurrencies) {
+            if (trimmed.startsWith(c, ignoreCase = true)) {
+                val rest = trimmed.substring(c.length).trim()
+                return Pair(c, rest)
+            }
+        }
+        return Pair("$", trimmed)
+    }
 
     fun updateCompany(value: String) {
         _uiState.update { it.copy(company = value, companyError = null) }
@@ -71,6 +139,14 @@ class AddEditViewModel(
         _uiState.update { it.copy(reminderDays = value) }
     }
 
+    fun updateSalary(value: String) {
+        _uiState.update { it.copy(salary = value) }
+    }
+
+    fun updateCurrency(value: String) {
+        _uiState.update { it.copy(currency = value) }
+    }
+
     fun saveApplication(): Boolean {
         val state = _uiState.value
         var hasError = false
@@ -87,19 +163,42 @@ class AddEditViewModel(
 
         if (hasError) return false
 
+        val formattedSalary = if (state.salary.isNotBlank()) {
+            val sal = state.salary.trim()
+            val hasSymbol = listOf("$", "₹", "€", "£", "AED", "CA$", "A$", "S$").any { sal.startsWith(it, ignoreCase = true) }
+            if (hasSymbol) sal else "${state.currency}$sal"
+        } else {
+            null
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, generalError = null) }
             try {
-                val request = CreateApplicationRequest(
-                    company = state.company.trim(),
-                    role = state.role.trim(),
-                    source = state.source,
-                    dateApplied = state.dateApplied,
-                    jobLink = state.jobLink.trim().takeIf { it.isNotEmpty() },
-                    status = state.status,
-                    reminderDays = state.reminderDays
-                )
-                api.createApplication(request)
+                if (state.isEditMode && !applicationId.isNullOrBlank()) {
+                    val updateReq = UpdateApplicationRequest(
+                        company = state.company.trim(),
+                        role = state.role.trim(),
+                        source = state.source,
+                        dateApplied = state.dateApplied,
+                        jobLink = state.jobLink.trim().takeIf { it.isNotEmpty() },
+                        status = state.status,
+                        reminderDays = state.reminderDays,
+                        salary = formattedSalary
+                    )
+                    api.updateApplication(applicationId, updateReq)
+                } else {
+                    val createReq = CreateApplicationRequest(
+                        company = state.company.trim(),
+                        role = state.role.trim(),
+                        source = state.source,
+                        dateApplied = state.dateApplied,
+                        jobLink = state.jobLink.trim().takeIf { it.isNotEmpty() },
+                        status = state.status,
+                        reminderDays = state.reminderDays,
+                        salary = formattedSalary
+                    )
+                    api.createApplication(createReq)
+                }
                 _uiState.update { it.copy(isSaving = false) }
                 _saveSuccessEvent.emit(Unit)
             } catch (e: Exception) {

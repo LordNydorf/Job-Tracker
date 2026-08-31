@@ -14,5 +14,6 @@ data class Application(
     val jobLink: String? = null,
     val status: Status = Status.APPLIED,
     val lastUpdated: Instant,
-    val reminderDays: Int? = null
+    val reminderDays: Int? = null,
+    val salary: String? = null
 )

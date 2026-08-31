@@ -41,14 +41,21 @@ import com.rohit.jobtracker.android.ui.theme.textColor
 import com.rohit.jobtracker.shared.model.Source
 import com.rohit.jobtracker.shared.model.Status
 
+import androidx.compose.material.icons.filled.AttachMoney
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ApplicationStepOne(
     company: String,
     role: String,
+    salary: String,
+    currency: String,
     companyError: String?,
     roleError: String?,
     onCompanyChange: (String) -> Unit,
-    onRoleChange: (String) -> Unit
+    onRoleChange: (String) -> Unit,
+    onSalaryChange: (String) -> Unit,
+    onCurrencyChange: (String) -> Unit
 ) {
     Text(
         text = "What job are you applying to?",
@@ -101,6 +108,93 @@ fun ApplicationStepOne(
         shape = RoundedCornerShape(16.dp),
         singleLine = true
     )
+
+    Spacer(modifier = Modifier.height(4.dp))
+
+    // Multi-Currency Compensation Section
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = "Target Compensation (Optional)",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        // Quick Currency Selector Chips
+        val currencies = listOf("$", "₹", "€", "£", "AED", "CA$", "A$", "S$")
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            currencies.forEach { curr ->
+                val isSelected = currency == curr
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onCurrencyChange(curr) },
+                    label = {
+                        Text(
+                            text = when (curr) {
+                                "$" -> "$ USD"
+                                "₹" -> "₹ INR"
+                                "€" -> "€ EUR"
+                                "£" -> "£ GBP"
+                                "AED" -> "AED"
+                                "CA$" -> "CA$"
+                                "A$" -> "A$"
+                                "S$" -> "S$"
+                                else -> curr
+                            },
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 12.sp
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+            }
+        }
+
+        OutlinedTextField(
+            value = salary,
+            onValueChange = onSalaryChange,
+            label = { Text("Salary / Rate") },
+            placeholder = {
+                Text(
+                    when (currency) {
+                        "₹" -> "e.g. 25 LPA or 2,500,000"
+                        "€" -> "e.g. 85,000 / yr"
+                        "£" -> "e.g. 75,000 / yr"
+                        "AED" -> "e.g. 25,000 / mo"
+                        else -> "e.g. 140,000 / yr or $75 / hr"
+                    }
+                )
+            },
+            prefix = {
+                Text(
+                    text = "$currency ",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    Icons.Default.AttachMoney,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            singleLine = true
+        )
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)

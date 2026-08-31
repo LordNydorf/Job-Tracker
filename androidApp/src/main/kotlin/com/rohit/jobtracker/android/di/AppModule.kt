@@ -48,6 +48,6 @@ val appModule = module {
     }
 
     viewModel { ApplicationListViewModel(api = get(), serverConfig = get()) }
-    viewModel { AddEditViewModel(api = get()) }
+    viewModel { (applicationId: String?) -> AddEditViewModel(applicationId = applicationId, api = get()) }
     viewModel { (applicationId: String) -> ApplicationDetailViewModel(applicationId = applicationId, api = get(), serverConfig = get()) }
 }

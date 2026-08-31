@@ -40,7 +40,7 @@ class AddEditViewModelTest {
     @Test
     fun testValidationFailsOnBlankCompanyAndRole() = runTest(testDispatcher) {
         val api = FakeJobTrackerApi()
-        val viewModel = AddEditViewModel(api)
+        val viewModel = AddEditViewModel(api = api)
 
         viewModel.updateCompany("")
         viewModel.updateRole("")
@@ -52,9 +52,9 @@ class AddEditViewModelTest {
     }
 
     @Test
-    fun testSuccessfulSaveEmitsEvent() = runTest(testDispatcher) {
+    fun testSuccessfulSaveWithCurrencyAndSalary() = runTest(testDispatcher) {
         val api = FakeJobTrackerApi()
-        val viewModel = AddEditViewModel(api)
+        val viewModel = AddEditViewModel(api = api)
 
         viewModel.updateCompany("Stripe")
         viewModel.updateRole("Senior Kotlin Dev")
@@ -63,6 +63,8 @@ class AddEditViewModelTest {
         viewModel.updateDateApplied(LocalDate.parse("2026-08-31"))
         viewModel.updateJobLink("https://stripe.com/jobs/123")
         viewModel.updateReminderDays(7)
+        viewModel.updateCurrency("₹")
+        viewModel.updateSalary("28 LPA")
 
         var emitted = false
         val job = launch {
@@ -85,6 +87,55 @@ class AddEditViewModelTest {
         assertEquals("Senior Kotlin Dev", savedApps.first().role)
         assertEquals(Status.INTERVIEW, savedApps.first().status)
         assertEquals(7, savedApps.first().reminderDays)
+        assertEquals("₹28 LPA", savedApps.first().salary)
+
+        job.cancel()
+    }
+
+    @Test
+    fun testEditModePrePopulatesExistingApplicationAndUpdates() = runTest(testDispatcher) {
+        val api = FakeJobTrackerApi()
+        val existing = api.createApplication(
+            com.rohit.jobtracker.shared.model.CreateApplicationRequest(
+                company = "Google",
+                role = "Software Engineer",
+                source = Source.REFERRAL,
+                dateApplied = LocalDate.parse("2026-08-31"),
+                status = Status.APPLIED,
+                salary = "$150,000 / yr",
+                reminderDays = 3
+            )
+        )
+
+        val viewModel = AddEditViewModel(applicationId = existing.id, api = api)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.isEditMode)
+        assertEquals("Google", viewModel.uiState.value.company)
+        assertEquals("Software Engineer", viewModel.uiState.value.role)
+        assertEquals("$", viewModel.uiState.value.currency)
+        assertEquals("150,000 / yr", viewModel.uiState.value.salary)
+
+        // Modify fields
+        viewModel.updateRole("Staff Software Engineer")
+        viewModel.updateSalary("200,000 / yr")
+
+        var emitted = false
+        val job = launch {
+            viewModel.saveSuccessEvent.first()
+            emitted = true
+        }
+
+        val result = viewModel.saveApplication()
+        advanceUntilIdle()
+
+        assertTrue(result)
+        assertTrue(emitted)
+
+        val updated = api.getApplication(existing.id)
+        assertNotNull(updated)
+        assertEquals("Staff Software Engineer", updated.role)
+        assertEquals("$200,000 / yr", updated.salary)
 
         job.cancel()
     }

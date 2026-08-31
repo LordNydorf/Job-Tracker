@@ -37,7 +37,8 @@ class JobTrackerRepositoryImplTest {
             dateApplied = LocalDate.parse("2026-08-31"),
             jobLink = "https://anthropic.com/jobs/1",
             status = Status.APPLIED,
-            reminderDays = 7
+            reminderDays = 7,
+            salary = "$180,000 / yr"
         )
 
         val created = repository.createApplication(request)
@@ -46,11 +47,13 @@ class JobTrackerRepositoryImplTest {
         assertEquals("AI Engineer", created.role)
         assertEquals(Status.APPLIED, created.status)
         assertEquals(7, created.reminderDays)
+        assertEquals("$180,000 / yr", created.salary)
 
         val fetched = repository.getApplication(created.id)
         assertNotNull(fetched)
         assertEquals(created.id, fetched.id)
         assertEquals("Anthropic", fetched.company)
+        assertEquals("$180,000 / yr", fetched.salary)
     }
 
     @Test
@@ -61,7 +64,8 @@ class JobTrackerRepositoryImplTest {
                 role = "Software Engineer",
                 source = Source.REFERRAL,
                 dateApplied = LocalDate.parse("2026-08-31"),
-                status = Status.APPLIED
+                status = Status.APPLIED,
+                salary = "₹25 LPA"
             )
         )
 
@@ -70,7 +74,8 @@ class JobTrackerRepositoryImplTest {
             request = UpdateApplicationRequest(
                 role = "Senior Software Engineer",
                 status = Status.INTERVIEW,
-                reminderDays = 3
+                reminderDays = 3,
+                salary = "₹32 LPA"
             )
         )
 
@@ -79,6 +84,7 @@ class JobTrackerRepositoryImplTest {
         assertEquals(Status.INTERVIEW, updated.status)
         assertEquals(3, updated.reminderDays)
         assertEquals("OpenAI", updated.company)
+        assertEquals("₹32 LPA", updated.salary)
     }
 
     @Test

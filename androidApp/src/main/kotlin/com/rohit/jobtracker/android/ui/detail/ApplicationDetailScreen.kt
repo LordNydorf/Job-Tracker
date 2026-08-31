@@ -67,11 +67,14 @@ import com.rohit.jobtracker.android.ui.components.TimelineNoteItem
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
+import androidx.compose.material.icons.filled.Edit
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ApplicationDetailScreen(
     applicationId: String,
     onNavigateBack: () -> Unit,
+    onNavigateToEdit: (String) -> Unit = {},
     viewModel: ApplicationDetailViewModel = koinViewModel(parameters = { parametersOf(applicationId) })
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -130,6 +133,15 @@ fun ApplicationDetailScreen(
                     }
                 },
                 actions = {
+                    if (uiState.application != null) {
+                        IconButton(onClick = { onNavigateToEdit(applicationId) }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit application",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                     IconButton(onClick = { showServerDialog = true }) {
                         Icon(Icons.Default.Dns, contentDescription = "Server Settings")
                     }
