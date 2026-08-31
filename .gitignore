@@ -12,3 +12,4 @@ Captures/
 .cxx
 *.apk
 *.aab
+.agents

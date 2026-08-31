@@ -2,6 +2,7 @@ package com.rohit.jobtracker.android.ui.detail
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -63,7 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rohit.jobtracker.android.ui.components.StatusBadge
 import com.rohit.jobtracker.android.ui.components.StatusPipelineStepper
 import com.rohit.jobtracker.android.ui.list.formatRelativeTime
-import com.rohit.jobtracker.android.ui.theme.getCompanyAvatarColor
+import com.rohit.jobtracker.android.ui.theme.getCompanyAvatarBrush
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Note
 import org.koin.androidx.compose.koinViewModel
@@ -92,7 +96,7 @@ fun ApplicationDetailScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Delete Application?") },
-            text = { Text("This will permanently remove this job application and all associated notes.") },
+            text = { Text("This will permanently remove this job application and all attached interview notes.") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -187,10 +191,11 @@ fun ApplicationDetailScreen(
                         item {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Pipeline Stage",
+                                text = "Pipeline Stage (1-Tap Progression)",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
+                                letterSpacing = 0.4.sp
                             )
                             StatusPipelineStepper(
                                 currentStatus = app.status,
@@ -213,17 +218,51 @@ fun ApplicationDetailScreen(
                             )
                         }
 
-                        // 3. Notes & Timeline Header
+                        // 3. Quick Note Suggestions
+                        item {
+                            Text(
+                                text = "Quick Updates",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                letterSpacing = 0.4.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val suggestions = listOf(
+                                    "Sent follow-up email",
+                                    "1st round interview scheduled",
+                                    "Completed technical take-home",
+                                    "Final round with team lead",
+                                    "Received offer letter"
+                                )
+                                suggestions.forEach { suggestion ->
+                                    SuggestionChip(
+                                        onClick = {
+                                            viewModel.updateNewNoteText(suggestion)
+                                            viewModel.addNote()
+                                        },
+                                        label = { Text("+ $suggestion", fontSize = 12.sp) },
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        // 4. Notes & Timeline Header
                         item {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 8.dp),
+                                    .padding(top = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Activity & Interview Notes",
+                                    text = "Activity & Interview Log",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -242,16 +281,16 @@ fun ApplicationDetailScreen(
                             }
                         }
 
-                        // 4. Notes Timeline List
+                        // 5. Notes Timeline List
                         if (uiState.notes.isEmpty()) {
                             item {
                                 Surface(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(16.dp),
                                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                                 ) {
                                     Text(
-                                        text = "No notes recorded yet. Add interviewer questions, prep links, and feedback below.",
+                                        text = "No notes recorded yet. Record interviewer questions, prep links, or quick updates above.",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.outline,
                                         modifier = Modifier.padding(18.dp)
@@ -275,7 +314,7 @@ fun ApplicationDetailScreen(
                         }
                     }
 
-                    // Bottom Note Creation Input Bar
+                    // Bottom Note Composer Bar
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -290,7 +329,7 @@ fun ApplicationDetailScreen(
                             OutlinedTextField(
                                 value = uiState.newNoteText,
                                 onValueChange = { viewModel.updateNewNoteText(it) },
-                                placeholder = { Text("Add interview note, questions...") },
+                                placeholder = { Text("Add interview questions, feedback...") },
                                 modifier = Modifier.weight(1f),
                                 maxLines = 3,
                                 shape = RoundedCornerShape(24.dp)
@@ -335,14 +374,14 @@ fun ApplicationHeaderCard(
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
-    val avatarBg = getCompanyAvatarColor(application.company)
+    val avatarBrush = getCompanyAvatarBrush(application.company)
     val initial = application.company.firstOrNull()?.uppercaseChar()?.toString() ?: "J"
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
+            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -358,15 +397,15 @@ fun ApplicationHeaderCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(avatarBg.copy(alpha = 0.2f)),
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(avatarBrush),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = initial,
-                        color = avatarBg,
-                        fontSize = 22.sp,
+                        color = Color.White,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Black
                     )
                 }
@@ -401,7 +440,7 @@ fun ApplicationHeaderCard(
             ) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                 ) {
                     Text(
                         text = "Source: ${application.source.name}",
@@ -433,7 +472,7 @@ fun ApplicationHeaderCard(
                 OutlinedButton(
                     onClick = { onOpenLink(link) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(14.dp)
                 ) {
                     Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -470,7 +509,7 @@ fun TimelineNoteItem(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top
     ) {
-        // Timeline node
+        // Timeline tree node
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.width(28.dp)

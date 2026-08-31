@@ -13,20 +13,20 @@ import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
     primary = BrandDarkPrimary,
-    onPrimary = Color(0xFF1E1B4B),
+    onPrimary = Color.White,
     primaryContainer = BrandDarkPrimaryContainer,
     onPrimaryContainer = Color(0xFFE0E7FF),
     secondary = Color(0xFF38BDF8),
     onSecondary = Color(0xFF082F49),
     secondaryContainer = Color(0xFF075985),
     onSecondaryContainer = Color(0xFFE0F2FE),
-    background = Color(0xFF0B0F19),
-    surface = Color(0xFF0B0F19),
+    background = Color(0xFF070A11), // Deep Pitch Slate
+    surface = Color(0xFF0F172A),    // Card Surface
     surfaceVariant = Color(0xFF1E293B),
     onSurface = Color(0xFFF8FAFC),
     onSurfaceVariant = Color(0xFF94A3B8),
-    outline = Color(0xFF475569),
-    outlineVariant = Color(0xFF334155)
+    outline = Color(0xFF334155),
+    outlineVariant = Color(0xFF1E293B)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -38,12 +38,12 @@ private val LightColorScheme = lightColorScheme(
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFE0F2FE),
     onSecondaryContainer = Color(0xFF075985),
-    background = Color(0xFFF8FAFC),
+    background = Color(0xFFF8FAFC), // Pure Soft Off-White
     surface = Color.White,
     surfaceVariant = Color(0xFFF1F5F9),
     onSurface = Color(0xFF0F172A),
-    onSurfaceVariant = Color(0xFF64748B),
-    outline = Color(0xFF94A3B8),
+    onSurfaceVariant = Color(0xFF475569),
+    outline = Color(0xFFCBD5E1),
     outlineVariant = Color(0xFFE2E8F0)
 )
 

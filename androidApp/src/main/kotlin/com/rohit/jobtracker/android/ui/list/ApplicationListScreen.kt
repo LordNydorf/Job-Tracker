@@ -28,9 +28,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -48,6 +50,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
@@ -69,8 +72,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rohit.jobtracker.android.ui.components.PipelineDashboardCard
 import com.rohit.jobtracker.android.ui.components.StatusBadge
-import com.rohit.jobtracker.android.ui.theme.getCompanyAvatarColor
+import com.rohit.jobtracker.android.ui.theme.getCompanyAvatarBrush
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Status
 import kotlinx.datetime.Clock
@@ -153,20 +157,19 @@ fun ApplicationListScreen(
                         Text(
                             text = "Job Tracker",
                             fontWeight = FontWeight.Black,
-                            letterSpacing = (-0.5).sp
+                            letterSpacing = (-0.6).sp
                         )
                         if (uiState.applications.isNotEmpty()) {
-                            Spacer(modifier = Modifier.width(10.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                modifier = Modifier.padding(horizontal = 2.dp)
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer
                             ) {
                                 Text(
                                     text = "${uiState.filteredApplications.size}",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -264,12 +267,38 @@ fun ApplicationListScreen(
                 }
             }
 
-            // Pipeline Summary Stats Row (when applications exist)
+            // Real-Time Search Bar
+            OutlinedTextField(
+                value = uiState.searchQuery,
+                onValueChange = { viewModel.updateSearchQuery(it) },
+                placeholder = { Text("Search company, role, or source...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                trailingIcon = {
+                    if (uiState.searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                ),
+                singleLine = true
+            )
+
+            // Pipeline Radar Card
             if (uiState.applications.isNotEmpty()) {
-                PipelineStatsOverview(applications = uiState.applications)
+                PipelineDashboardCard(applications = uiState.applications)
             }
 
-            // Status Filter Chips Row
+            // Status Filter Chips Row with Counters
             val filterScrollState = rememberScrollState()
             Row(
                 modifier = Modifier
@@ -280,12 +309,21 @@ fun ApplicationListScreen(
             ) {
                 StatusFilter.entries.forEach { filter ->
                     val isSelected = uiState.statusFilter == filter
+                    val count = when (filter) {
+                        StatusFilter.ALL -> uiState.applications.size
+                        StatusFilter.APPLIED -> uiState.applications.count { it.status == Status.APPLIED }
+                        StatusFilter.SCREENING -> uiState.applications.count { it.status == Status.SCREENING }
+                        StatusFilter.INTERVIEW -> uiState.applications.count { it.status == Status.INTERVIEW }
+                        StatusFilter.OFFER -> uiState.applications.count { it.status == Status.OFFER }
+                        StatusFilter.CLOSED -> uiState.applications.count { it.status == Status.REJECTED || it.status == Status.GHOSTED }
+                    }
+
                     FilterChip(
                         selected = isSelected,
                         onClick = { viewModel.setFilter(filter) },
                         label = {
                             Text(
-                                text = filter.name,
+                                text = "${filter.name} ($count)",
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                             )
                         },
@@ -293,7 +331,7 @@ fun ApplicationListScreen(
                             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                             selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                         ),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(14.dp)
                     )
                 }
             }
@@ -311,16 +349,19 @@ fun ApplicationListScreen(
 
                 uiState.filteredApplications.isEmpty() -> {
                     EmptyState(
-                        isFiltered = uiState.statusFilter != StatusFilter.ALL && uiState.applications.isNotEmpty(),
+                        isFiltered = (uiState.statusFilter != StatusFilter.ALL || uiState.searchQuery.isNotEmpty()) && uiState.applications.isNotEmpty(),
                         onAddClicked = onNavigateToAdd,
-                        onClearFilter = { viewModel.setFilter(StatusFilter.ALL) }
+                        onClearFilter = {
+                            viewModel.setFilter(StatusFilter.ALL)
+                            viewModel.updateSearchQuery("")
+                        }
                     )
                 }
 
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 88.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(
@@ -340,87 +381,28 @@ fun ApplicationListScreen(
 }
 
 @Composable
-fun PipelineStatsOverview(
-    applications: List<Application>,
-    modifier: Modifier = Modifier
-) {
-    val total = applications.size
-    val interviews = applications.count { it.status == Status.INTERVIEW || it.status == Status.SCREENING }
-    val offers = applications.count { it.status == Status.OFFER }
-    val now = Clock.System.now()
-    val followUpsNeeded = applications.count {
-        (it.status == Status.APPLIED || it.status == Status.SCREENING || it.status == Status.INTERVIEW) &&
-                it.reminderDays != null && (now - it.lastUpdated).inWholeDays >= it.reminderDays!!
-    }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        StatPill(label = "Total", count = total, modifier = Modifier.weight(1f))
-        StatPill(label = "Active", count = interviews, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
-        StatPill(label = "Offers", count = offers, color = Color(0xFF10B981), modifier = Modifier.weight(1f))
-        if (followUpsNeeded > 0) {
-            StatPill(label = "Nudge", count = followUpsNeeded, color = Color(0xFFF59E0B), isAlert = true, modifier = Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-fun StatPill(
-    label: String,
-    count: Int,
-    modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.onSurface,
-    isAlert: Boolean = false
-) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = if (isAlert) Color(0xFFFEF3C7) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        modifier = modifier
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = count.toString(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Black,
-                color = if (isAlert) Color(0xFFB45309) else color
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (isAlert) Color(0xFFB45309) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-            )
-        }
-    }
-}
-
-@Composable
 fun ApplicationCard(
     application: Application,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
-    val avatarBg = getCompanyAvatarColor(application.company)
+    val avatarBrush = getCompanyAvatarBrush(application.company)
     val initial = application.company.firstOrNull()?.uppercaseChar()?.toString() ?: "J"
+    val now = Clock.System.now()
+    val daysSinceUpdate = (now - application.lastUpdated).inWholeDays
+    val isOverdue = (application.status == Status.APPLIED || application.status == Status.SCREENING || application.status == Status.INTERVIEW) &&
+            application.reminderDays != null && daysSinceUpdate >= application.reminderDays!!
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
+            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -431,18 +413,18 @@ fun ApplicationCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Company Monogram Avatar
+                // Gradient Company Avatar
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(avatarBg.copy(alpha = 0.18f)),
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(avatarBrush),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = initial,
-                        color = avatarBg,
-                        fontSize = 19.sp,
+                        color = Color.White,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Black
                     )
                 }
@@ -473,23 +455,55 @@ fun ApplicationCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Footer row
+            // Footer metadata row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = application.source.name,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            text = application.source.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    if (isOverdue) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFFEF3C7)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.NotificationsActive,
+                                    contentDescription = null,
+                                    tint = Color(0xFFB45309),
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = "Nudge due",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFB45309)
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -551,18 +565,18 @@ fun EmptyState(
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = if (isFiltered) "Try switching to another filter or reset to All." else "Track your job hunt, follow-ups, and interview notes in one place.",
+                text = if (isFiltered) "Try adjusting your search query or reset filter." else "Track your job hunt, follow-ups, and interview notes in one place.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             Spacer(modifier = Modifier.height(24.dp))
             if (isFiltered) {
-                Button(onClick = onClearFilter, shape = RoundedCornerShape(12.dp)) {
+                Button(onClick = onClearFilter, shape = RoundedCornerShape(14.dp)) {
                     Text("Show All Applications")
                 }
             } else {
-                Button(onClick = onAddClicked, shape = RoundedCornerShape(12.dp)) {
+                Button(onClick = onAddClicked, shape = RoundedCornerShape(14.dp)) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Add First Application")
@@ -580,9 +594,7 @@ fun formatRelativeTime(instant: Instant): String {
         diffSeconds < 60 -> "Just now"
         diffSeconds < 3600 -> "${diffSeconds / 60}m ago"
         diffSeconds < 86400 -> "${diffSeconds / 3600}h ago"
-        diffSeconds < 604800 -> "${diffSinceDays(diffSeconds)}d ago"
+        diffSeconds < 604800 -> "${diffSeconds / 86400}d ago"
         else -> "${diffSeconds / 604800}w ago"
     }
 }
-
-private fun diffSinceDays(seconds: Long): Long = seconds / 86400

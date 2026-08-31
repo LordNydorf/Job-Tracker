@@ -1,6 +1,7 @@
 package com.rohit.jobtracker.android.ui.addedit
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,11 +57,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rohit.jobtracker.shared.model.Source
 import com.rohit.jobtracker.shared.model.Status
 import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
@@ -98,7 +101,7 @@ fun AddEditApplicationScreen(
                     }
                     showDatePicker = false
                 }) {
-                    Text("OK")
+                    Text("OK", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -114,7 +117,7 @@ fun AddEditApplicationScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("New Application", fontWeight = FontWeight.Bold) },
+                title = { Text("Log Application", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Go back")
@@ -138,7 +141,7 @@ fun AddEditApplicationScreen(
             uiState.generalError?.let { error ->
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
@@ -150,21 +153,21 @@ fun AddEditApplicationScreen(
                 }
             }
 
-            // Section: Role & Company
+            // Section 1: Role & Company
             Text(
-                text = "Position Details",
+                text = "Target Role & Company",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.4.sp
             )
 
-            // Company Name
             OutlinedTextField(
                 value = uiState.company,
                 onValueChange = { viewModel.updateCompany(it) },
                 label = { Text("Company Name *") },
-                placeholder = { Text("e.g. Stripe, Linear, Vercel") },
-                leadingIcon = { Icon(Icons.Default.Business, contentDescription = null) },
+                placeholder = { Text("e.g. Linear, Stripe, Google") },
+                leadingIcon = { Icon(Icons.Default.Business, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                 isError = uiState.companyError != null,
                 supportingText = uiState.companyError?.let { { Text(it) } },
                 modifier = Modifier.fillMaxWidth(),
@@ -172,13 +175,12 @@ fun AddEditApplicationScreen(
                 singleLine = true
             )
 
-            // Role
             OutlinedTextField(
                 value = uiState.role,
                 onValueChange = { viewModel.updateRole(it) },
                 label = { Text("Job Role / Title *") },
                 placeholder = { Text("e.g. Senior Android Engineer") },
-                leadingIcon = { Icon(Icons.Default.Work, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Work, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                 isError = uiState.roleError != null,
                 supportingText = uiState.roleError?.let { { Text(it) } },
                 modifier = Modifier.fillMaxWidth(),
@@ -188,12 +190,13 @@ fun AddEditApplicationScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Section: Pipeline & Source
+            // Section 2: Tracking Details
             Text(
-                text = "Tracking & Source",
+                text = "Source & Status",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.4.sp
             )
 
             // Source Dropdown
@@ -205,7 +208,7 @@ fun AddEditApplicationScreen(
                     value = uiState.source.name,
                     onValueChange = { },
                     readOnly = true,
-                    label = { Text("Source Platform") },
+                    label = { Text("Application Source") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = sourceExpanded) },
                     modifier = Modifier
                         .menuAnchor(MenuAnchorType.PrimaryNotEditable)
@@ -228,7 +231,7 @@ fun AddEditApplicationScreen(
                 }
             }
 
-            // Initial Status Dropdown
+            // Status Dropdown
             ExposedDropdownMenuBox(
                 expanded = statusExpanded,
                 onExpandedChange = { statusExpanded = it }
@@ -237,7 +240,7 @@ fun AddEditApplicationScreen(
                     value = uiState.status.name,
                     onValueChange = { },
                     readOnly = true,
-                    label = { Text("Initial Stage") },
+                    label = { Text("Initial Pipeline Stage") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusExpanded) },
                     modifier = Modifier
                         .menuAnchor(MenuAnchorType.PrimaryNotEditable)
@@ -260,7 +263,7 @@ fun AddEditApplicationScreen(
                 }
             }
 
-            // Date Applied with DatePicker Trigger
+            // Date Applied with DatePicker
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -271,15 +274,15 @@ fun AddEditApplicationScreen(
                     onValueChange = { },
                     readOnly = true,
                     enabled = false,
-                    label = { Text("Date Applied") },
-                    leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                    label = { Text("Date Applied (Tap to choose)") },
+                    leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                         disabledTextColor = MaterialTheme.colorScheme.onSurface,
                         disabledBorderColor = MaterialTheme.colorScheme.outline,
                         disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        disabledLeadingIconColor = MaterialTheme.colorScheme.primary
                     )
                 )
             }
@@ -288,7 +291,7 @@ fun AddEditApplicationScreen(
             OutlinedTextField(
                 value = uiState.jobLink,
                 onValueChange = { viewModel.updateJobLink(it) },
-                label = { Text("Job Link (Optional)") },
+                label = { Text("Job Posting Link (Optional)") },
                 placeholder = { Text("https://...") },
                 leadingIcon = { Icon(Icons.Default.Link, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
@@ -297,21 +300,48 @@ fun AddEditApplicationScreen(
                 singleLine = true
             )
 
-            // Follow-up Reminder (Days)
+            // Section 3: Follow-up Nudges with Quick Preset Chips
+            Text(
+                text = "Follow-up Reminder",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.4.sp
+            )
+
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf("3", "5", "7", "14", "30").forEach { days ->
+                    val isSelected = uiState.reminderDays == days
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { viewModel.updateReminderDays(days) },
+                        label = { Text("$days Days", fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            }
+
             OutlinedTextField(
                 value = uiState.reminderDays,
                 onValueChange = { viewModel.updateReminderDays(it) },
-                label = { Text("Follow-up Nudge (Days)") },
+                label = { Text("Custom Days Threshold") },
                 placeholder = { Text("7") },
-                leadingIcon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                supportingText = { Text("Nudge notification if no update after N days") },
+                supportingText = { Text("Get a background nudge if no update occurs within N days") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Save Button
             Button(

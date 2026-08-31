@@ -6,6 +6,7 @@ import com.rohit.jobtracker.android.network.ServerConfig
 import com.rohit.jobtracker.shared.api.JobTrackerApi
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Status
+import com.rohit.jobtracker.shared.model.UpdateApplicationRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +34,7 @@ data class ApplicationListUiState(
     val filteredApplications: List<Application> = emptyList(),
     val statusFilter: StatusFilter = StatusFilter.ALL,
     val sortOption: SortOption = SortOption.LAST_UPDATED,
+    val searchQuery: String = "",
     val currentServerUrl: String = "",
     val errorMessage: String? = null
 )
@@ -60,7 +62,7 @@ class ApplicationListViewModel(
             try {
                 val list = api.getApplications()
                 _uiState.update { state ->
-                    val filtered = applyFilterAndSort(list, state.statusFilter, state.sortOption)
+                    val filtered = applyFilterAndSort(list, state.statusFilter, state.sortOption, state.searchQuery)
                     state.copy(
                         isLoading = false,
                         applications = list,
@@ -79,6 +81,13 @@ class ApplicationListViewModel(
         }
     }
 
+    fun updateSearchQuery(query: String) {
+        _uiState.update { state ->
+            val filtered = applyFilterAndSort(state.applications, state.statusFilter, state.sortOption, query)
+            state.copy(searchQuery = query, filteredApplications = filtered)
+        }
+    }
+
     fun updateServerUrl(newUrl: String) {
         serverConfig?.setBaseUrl(newUrl)
         _uiState.update { it.copy(currentServerUrl = newUrl.trim()) }
@@ -87,36 +96,71 @@ class ApplicationListViewModel(
 
     fun setFilter(filter: StatusFilter) {
         _uiState.update { state ->
-            val filtered = applyFilterAndSort(state.applications, filter, state.sortOption)
+            val filtered = applyFilterAndSort(state.applications, filter, state.sortOption, state.searchQuery)
             state.copy(statusFilter = filter, filteredApplications = filtered)
         }
     }
 
     fun setSort(sort: SortOption) {
         _uiState.update { state ->
-            val filtered = applyFilterAndSort(state.applications, state.statusFilter, sort)
+            val filtered = applyFilterAndSort(state.applications, state.statusFilter, sort, state.searchQuery)
             state.copy(sortOption = sort, filteredApplications = filtered)
+        }
+    }
+
+    fun quickUpdateStatus(applicationId: String, newStatus: Status) {
+        val currentApps = _uiState.value.applications
+        val targetIndex = currentApps.indexOfFirst { it.id == applicationId }
+        if (targetIndex == -1) return
+
+        val updatedList = currentApps.toMutableList()
+        val updatedApp = updatedList[targetIndex].copy(status = newStatus)
+        updatedList[targetIndex] = updatedApp
+
+        _uiState.update { state ->
+            val filtered = applyFilterAndSort(updatedList, state.statusFilter, state.sortOption, state.searchQuery)
+            state.copy(applications = updatedList, filteredApplications = filtered)
+        }
+
+        viewModelScope.launch {
+            try {
+                api.updateApplication(applicationId, UpdateApplicationRequest(status = newStatus))
+            } catch (e: Exception) {
+                loadApplications() // Rollback on network failure
+            }
         }
     }
 
     private fun applyFilterAndSort(
         list: List<Application>,
         filter: StatusFilter,
-        sort: SortOption
+        sort: SortOption,
+        query: String
     ): List<Application> {
-        val filtered = when (filter) {
-            StatusFilter.ALL -> list
-            StatusFilter.APPLIED -> list.filter { it.status == Status.APPLIED }
-            StatusFilter.SCREENING -> list.filter { it.status == Status.SCREENING }
-            StatusFilter.INTERVIEW -> list.filter { it.status == Status.INTERVIEW }
-            StatusFilter.OFFER -> list.filter { it.status == Status.OFFER }
-            StatusFilter.CLOSED -> list.filter { it.status == Status.REJECTED || it.status == Status.GHOSTED }
+        val queryFiltered = if (query.isBlank()) {
+            list
+        } else {
+            val q = query.trim().lowercase()
+            list.filter {
+                it.company.lowercase().contains(q) ||
+                        it.role.lowercase().contains(q) ||
+                        it.source.name.lowercase().contains(q)
+            }
+        }
+
+        val statusFiltered = when (filter) {
+            StatusFilter.ALL -> queryFiltered
+            StatusFilter.APPLIED -> queryFiltered.filter { it.status == Status.APPLIED }
+            StatusFilter.SCREENING -> queryFiltered.filter { it.status == Status.SCREENING }
+            StatusFilter.INTERVIEW -> queryFiltered.filter { it.status == Status.INTERVIEW }
+            StatusFilter.OFFER -> queryFiltered.filter { it.status == Status.OFFER }
+            StatusFilter.CLOSED -> queryFiltered.filter { it.status == Status.REJECTED || it.status == Status.GHOSTED }
         }
 
         return when (sort) {
-            SortOption.LAST_UPDATED -> filtered.sortedByDescending { it.lastUpdated }
-            SortOption.DATE_APPLIED -> filtered.sortedByDescending { it.dateApplied }
-            SortOption.COMPANY -> filtered.sortedBy { it.company.lowercase() }
+            SortOption.LAST_UPDATED -> statusFiltered.sortedByDescending { it.lastUpdated }
+            SortOption.DATE_APPLIED -> statusFiltered.sortedByDescending { it.dateApplied }
+            SortOption.COMPANY -> statusFiltered.sortedBy { it.company.lowercase() }
         }
     }
 }
