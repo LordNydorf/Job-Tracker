@@ -181,8 +181,9 @@ fun AddEditApplicationScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 14.dp)
+                        .imePadding()
                         .navigationBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 14.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
