@@ -1,13 +1,19 @@
 package com.rohit.jobtracker.android
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -20,15 +26,30 @@ import com.rohit.jobtracker.android.ui.navigation.NavRoute
 import com.rohit.jobtracker.android.ui.theme.JobTrackerTheme
 
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Request POST_NOTIFICATIONS on Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        val targetApplicationId = intent.getStringExtra("applicationId")
+
         setContent {
             JobTrackerTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    JobTrackerApp()
+                    JobTrackerApp(initialApplicationId = targetApplicationId)
                 }
             }
         }
@@ -36,8 +57,14 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun JobTrackerApp() {
+fun JobTrackerApp(initialApplicationId: String? = null) {
     val navController = rememberNavController()
+
+    LaunchedEffect(initialApplicationId) {
+        if (!initialApplicationId.isNullOrBlank()) {
+            navController.navigate(NavRoute.Detail.createRoute(initialApplicationId))
+        }
+    }
 
     NavHost(
         navController = navController,
