@@ -1,7 +1,10 @@
 package com.rohit.jobtracker.android.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,11 +16,14 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rohit.jobtracker.android.ui.theme.StatusGhostedBorder
 import com.rohit.jobtracker.android.ui.theme.backgroundColor
 import com.rohit.jobtracker.android.ui.theme.textColor
@@ -30,17 +36,23 @@ fun StatusPipelineStepper(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    val isDark = isSystemInDarkTheme()
     val scrollState = rememberScrollState()
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(scrollState)
-            .padding(vertical = 8.dp),
+            .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Status.entries.forEach { status ->
             val isSelected = status == currentStatus
+            val targetTextColor = if (isSelected) status.textColor(isDark) else MaterialTheme.colorScheme.onSurfaceVariant
+            val targetBgColor = if (isSelected) status.backgroundColor(isDark) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+
+            val animatedTextColor by animateColorAsState(targetTextColor, tween(200), label = "textColor")
+            val animatedBgColor by animateColorAsState(targetBgColor, tween(200), label = "bgColor")
 
             FilterChip(
                 selected = isSelected,
@@ -49,26 +61,33 @@ fun StatusPipelineStepper(
                 label = {
                     Text(
                         text = status.name,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        fontSize = 12.5.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                     )
                 },
                 leadingIcon = if (isSelected) {
                     {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Selected status",
-                            tint = status.textColor()
+                            contentDescription = "Current Stage",
+                            tint = animatedTextColor
                         )
                     }
                 } else null,
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = status.backgroundColor(),
-                    selectedLabelColor = status.textColor()
+                    containerColor = animatedBgColor,
+                    labelColor = animatedTextColor,
+                    selectedContainerColor = animatedBgColor,
+                    selectedLabelColor = animatedTextColor
                 ),
                 border = if (isSelected && status == Status.GHOSTED) {
                     BorderStroke(1.5.dp, StatusGhostedBorder)
-                } else null,
-                shape = RoundedCornerShape(12.dp)
+                } else if (isSelected) {
+                    BorderStroke(1.dp, animatedTextColor.copy(alpha = 0.4f))
+                } else {
+                    BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                },
+                shape = RoundedCornerShape(14.dp)
             )
         }
     }

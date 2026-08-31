@@ -3,15 +3,20 @@ package com.rohit.jobtracker.android.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,30 +28,47 @@ import com.rohit.jobtracker.shared.model.Status
 @Composable
 fun StatusBadge(
     status: Status,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showDot: Boolean = true
 ) {
-    val shape = RoundedCornerShape(8.dp)
+    val isDark = isSystemInDarkTheme()
+    val shape = RoundedCornerShape(10.dp)
     val isGhosted = status == Status.GHOSTED
+    val txtColor = status.textColor(isDark)
+    val bgColor = status.backgroundColor(isDark)
 
     Box(
         modifier = modifier
             .clip(shape)
-            .background(status.backgroundColor())
+            .background(bgColor)
             .then(
                 if (isGhosted) {
-                    Modifier.border(BorderStroke(1.dp, StatusGhostedBorder), shape)
+                    Modifier.border(BorderStroke(1.dp, StatusGhostedBorder.copy(alpha = 0.6f)), shape)
                 } else {
                     Modifier
                 }
             )
-            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .padding(horizontal = 10.dp, vertical = 5.dp)
     ) {
-        Text(
-            text = status.name,
-            color = status.textColor(),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.5.sp
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (showDot) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(txtColor)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+            Text(
+                text = status.name,
+                color = txtColor,
+                fontSize = 11.5.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.4.sp
+            )
+        }
     }
 }

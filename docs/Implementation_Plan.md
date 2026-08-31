@@ -24,12 +24,14 @@
 - [x] Wire Ktor client implementation of `JobTrackerApi`, swap mock data for real network calls.
 
 ## Phase 4 — Integration (Day 5–6)
-- [ ] End-to-end test: add application on device → confirm it persists in backend DB → kill and reopen app → confirm data loads from server, not just local state.
-- [ ] Handle loading/error states in UI (empty list, network failure, retry).
+- [x] End-to-end test: add application on device → confirm it persists in backend DB → kill and reopen app → confirm data loads from server, not just local state.
+- [x] Test error states: simulate server unreachable (kill Ktor server) → verify user-facing error message with retry button.
 
-## Phase 5 — Polish Feature (Day 6–7)
-- [ ] WorkManager reminder: schedule local notification if `lastUpdated` exceeds threshold.
-- [ ] Status pipeline visual polish (colors from Design Brief).
+## Phase 5 — Polish & Feature (Day 6–7)
+- [x] Implement WorkManager reminder notification worker for stale applications (`daysSinceLastUpdate > reminderDays`).
+- [x] Apply visual styling rules from [Design_Brief.md](file:///c:/Users/notth/Projects/New%20folder/docs/Design_Brief.md) — status colors, dark mode, card typography, touch feedback.
+- [x] Clean up code, remove all TODOs, ensure zero compiler warnings.d (config-driven, not hardcoded).
+- [ ] Final smoke test against production backend.
 
 ## Phase 6 — Deploy (Day 7)
 - [ ] Dockerize backend, deploy to Railway/Render.

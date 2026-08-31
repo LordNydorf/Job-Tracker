@@ -2,6 +2,7 @@ package com.rohit.jobtracker.android.ui.detail
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,15 +16,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.NoteAdd
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material3.AlertDialog
@@ -40,7 +40,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,6 +53,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rohit.jobtracker.android.ui.components.StatusBadge
 import com.rohit.jobtracker.android.ui.components.StatusPipelineStepper
 import com.rohit.jobtracker.android.ui.list.formatRelativeTime
+import com.rohit.jobtracker.android.ui.theme.getCompanyAvatarColor
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Note
 import org.koin.androidx.compose.koinViewModel
@@ -91,7 +92,7 @@ fun ApplicationDetailScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Delete Application?") },
-            text = { Text("This will permanently delete this job application and all associated notes.") },
+            text = { Text("This will permanently remove this job application and all associated notes.") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -114,7 +115,7 @@ fun ApplicationDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.application?.company ?: "Application Detail") },
+                title = { Text(uiState.application?.company ?: "Application Detail", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Go back")
@@ -146,7 +147,7 @@ fun ApplicationDetailScreen(
                         .padding(innerPadding),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(strokeWidth = 3.dp)
                 }
             }
 
@@ -182,14 +183,14 @@ fun ApplicationDetailScreen(
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // 1. Interactive Pipeline Stepper
+                        // 1. Pipeline Stepper Section
                         item {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Pipeline Stage (1-Tap Switch)",
+                                text = "Pipeline Stage",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.outline
+                                color = MaterialTheme.colorScheme.primary
                             )
                             StatusPipelineStepper(
                                 currentStatus = app.status,
@@ -198,7 +199,7 @@ fun ApplicationDetailScreen(
                             )
                         }
 
-                        // 2. Main Details Card
+                        // 2. Main Details Header Card
                         item {
                             ApplicationHeaderCard(
                                 application = app,
@@ -206,13 +207,13 @@ fun ApplicationDetailScreen(
                                     try {
                                         uriHandler.openUri(url)
                                     } catch (e: Exception) {
-                                        Toast.makeText(context, "Cannot open URL", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Cannot open link", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             )
                         }
 
-                        // 3. Notes Header
+                        // 3. Notes & Timeline Header
                         item {
                             Row(
                                 modifier = Modifier
@@ -222,50 +223,60 @@ fun ApplicationDetailScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Notes & Interview Log",
+                                    text = "Activity & Interview Notes",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Text(
-                                    text = "${uiState.notes.size} notes",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline
-                                )
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                ) {
+                                    Text(
+                                        text = "${uiState.notes.size} entries",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
                             }
                         }
 
-                        // 4. Notes List
+                        // 4. Notes Timeline List
                         if (uiState.notes.isEmpty()) {
                             item {
                                 Surface(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                                 ) {
                                     Text(
-                                        text = "No notes added yet. Record interviewer questions, prep points, and feedback below.",
+                                        text = "No notes recorded yet. Add interviewer questions, prep links, and feedback below.",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.padding(16.dp)
+                                        modifier = Modifier.padding(18.dp)
                                     )
                                 }
                             }
                         } else {
-                            items(
+                            itemsIndexed(
                                 items = uiState.notes,
-                                key = { it.id }
-                            ) { note ->
-                                NoteCard(note = note)
+                                key = { _, note -> note.id }
+                            ) { index, note ->
+                                TimelineNoteItem(
+                                    note = note,
+                                    isLast = index == uiState.notes.lastIndex
+                                )
                             }
                         }
 
                         item {
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
 
-                    // Bottom Note Input Box
-                    HorizontalDivider()
+                    // Bottom Note Creation Input Bar
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.surface
@@ -279,7 +290,7 @@ fun ApplicationDetailScreen(
                             OutlinedTextField(
                                 value = uiState.newNoteText,
                                 onValueChange = { viewModel.updateNewNoteText(it) },
-                                placeholder = { Text("Add interview note, questions, or update...") },
+                                placeholder = { Text("Add interview note, questions...") },
                                 modifier = Modifier.weight(1f),
                                 maxLines = 3,
                                 shape = RoundedCornerShape(24.dp)
@@ -292,7 +303,7 @@ fun ApplicationDetailScreen(
                                     .size(48.dp)
                                     .background(
                                         color = if (uiState.newNoteText.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                        shape = RoundedCornerShape(24.dp)
+                                        shape = CircleShape
                                     )
                             ) {
                                 if (uiState.isAddingNote) {
@@ -323,40 +334,64 @@ fun ApplicationHeaderCard(
     onOpenLink: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDark = isSystemInDarkTheme()
+    val avatarBg = getCompanyAvatarColor(application.company)
+    val initial = application.company.firstOrNull()?.uppercaseChar()?.toString() ?: "J"
+
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-        )
+            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(avatarBg.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = initial,
+                        color = avatarBg,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = application.company,
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = application.role,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
                     )
                 }
+
+                Spacer(modifier = Modifier.width(8.dp))
                 StatusBadge(status = application.status)
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
             // Metadata Row
             Row(
@@ -364,17 +399,24 @@ fun ApplicationHeaderCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SuggestionChip(
-                    onClick = { },
-                    label = { Text("Source: ${application.source.name}") },
-                    shape = RoundedCornerShape(8.dp)
-                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ) {
+                    Text(
+                        text = "Source: ${application.source.name}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.CalendarToday,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(14.dp),
                         tint = MaterialTheme.colorScheme.outline
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -391,7 +433,7 @@ fun ApplicationHeaderCard(
                 OutlinedButton(
                     onClick = { onOpenLink(link) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -404,8 +446,8 @@ fun ApplicationHeaderCard(
                 Icon(
                     imageVector = Icons.Default.NotificationsActive,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.outline
+                    modifier = Modifier.size(15.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
@@ -419,35 +461,67 @@ fun ApplicationHeaderCard(
 }
 
 @Composable
-fun NoteCard(
+fun TimelineNoteItem(
     note: Note,
+    isLast: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Row(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        verticalAlignment = Alignment.Top
     ) {
+        // Timeline node
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.width(28.dp)
         ) {
-            Text(
-                text = note.text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = formatRelativeTime(note.createdAt),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
-                fontSize = 11.sp
+            if (!isLast) {
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .height(56.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Note Card
+        Card(
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = 10.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
             )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp)
+            ) {
+                Text(
+                    text = note.text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = formatRelativeTime(note.createdAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }
