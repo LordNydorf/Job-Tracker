@@ -7,23 +7,36 @@ import io.ktor.server.application.install
 import io.ktor.server.request.path
 import io.ktor.server.response.respond
 
-val ApiKeyAuth = createApplicationPlugin(name = "ApiKeyAuth") {
-    val expectedApiKey = System.getenv("JOB_TRACKER_API_KEY") ?: "dev-secret-key"
-
-    onCall { call ->
-        val path = call.request.path()
-        // Public endpoints bypass API key check
-        if (path == "/" || path == "/health") {
-            return@onCall
+fun Application.configureSecurity(apiKey: String? = null) {
+    val isDevMode = System.getenv("ENVIRONMENT") == "development" || System.getProperty("io.ktor.development") == "true" || apiKey != null
+    val configuredKey = apiKey
+        ?: System.getenv("API_KEY")
+        ?: System.getenv("JOB_TRACKER_API_KEY")
+        ?: if (isDevMode) {
+            "dev-secret-key"
+        } else {
+            throw IllegalStateException(
+                "CRITICAL SECURITY CONFIG ERROR: 'API_KEY' environment variable is not configured. Server startup aborted."
+            )
         }
 
-        val providedKey = call.request.headers["X-API-Key"]
-        if (providedKey == null || providedKey != expectedApiKey) {
-            call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid or missing X-API-Key header"))
+    val apiKeyAuthPlugin = createApplicationPlugin(name = "ApiKeyAuthPlugin") {
+        onCall { call ->
+            val path = call.request.path()
+            // Public health and root endpoints bypass auth check
+            if (path == "/" || path == "/health") {
+                return@onCall
+            }
+
+            val providedKey = call.request.headers["X-API-Key"]
+            if (providedKey == null || providedKey != configuredKey) {
+                call.respond(
+                    HttpStatusCode.Unauthorized,
+                    mapOf("error" to "Invalid or missing X-API-Key header")
+                )
+            }
         }
     }
-}
 
-fun Application.configureSecurity() {
-    install(ApiKeyAuth)
+    install(apiKeyAuthPlugin)
 }

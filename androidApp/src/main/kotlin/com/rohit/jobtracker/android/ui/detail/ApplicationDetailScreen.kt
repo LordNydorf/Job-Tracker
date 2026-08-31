@@ -3,7 +3,6 @@ package com.rohit.jobtracker.android.ui.detail
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,20 +24,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -60,7 +53,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -68,12 +60,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.rohit.jobtracker.android.ui.components.StatusBadge
+import com.rohit.jobtracker.android.ui.components.ApplicationHeaderCard
+import com.rohit.jobtracker.android.ui.components.ServerConfigDialog
 import com.rohit.jobtracker.android.ui.components.StatusPipelineStepper
-import com.rohit.jobtracker.android.ui.list.formatRelativeTime
-import com.rohit.jobtracker.android.ui.theme.getCompanyAvatarBrush
-import com.rohit.jobtracker.shared.model.Application
-import com.rohit.jobtracker.shared.model.Note
+import com.rohit.jobtracker.android.ui.components.TimelineNoteItem
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -89,7 +79,6 @@ fun ApplicationDetailScreen(
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showServerDialog by remember { mutableStateOf(false) }
-    var serverUrlInput by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.deleteSuccessEvent.collect {
@@ -99,58 +88,11 @@ fun ApplicationDetailScreen(
     }
 
     if (showServerDialog) {
-        AlertDialog(
-            onDismissRequest = { showServerDialog = false },
-            title = { Text("Backend Server URL") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Set backend IP for physical device or emulator.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    OutlinedTextField(
-                        value = serverUrlInput,
-                        onValueChange = { serverUrlInput = it },
-                        label = { Text("Server Base URL") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    Text("Quick Presets:", style = MaterialTheme.typography.labelSmall)
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        SuggestionChip(
-                            onClick = { serverUrlInput = "http://192.168.0.164:8080" },
-                            label = { Text("Wi-Fi IP") }
-                        )
-                        SuggestionChip(
-                            onClick = { serverUrlInput = "http://127.0.0.1:8080" },
-                            label = { Text("USB (127.0.0.1)") }
-                        )
-                        SuggestionChip(
-                            onClick = { serverUrlInput = "http://10.0.2.2:8080" },
-                            label = { Text("Emulator") }
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    if (serverUrlInput.isNotBlank()) {
-                        viewModel.updateServerUrl(serverUrlInput)
-                    }
-                    showServerDialog = false
-                }) {
-                    Text("Save & Connect")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showServerDialog = false }) {
-                    Text("Cancel")
-                }
-            }
+        ServerConfigDialog(
+            currentUrl = uiState.currentServerUrl,
+            currentApiKey = uiState.currentApiKey,
+            onDismiss = { showServerDialog = false },
+            onSave = { url, key -> viewModel.updateServerConfig(url, key) }
         )
     }
 
@@ -188,11 +130,8 @@ fun ApplicationDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        serverUrlInput = uiState.currentServerUrl
-                        showServerDialog = true
-                    }) {
-                        Icon(Icons.Default.Dns, contentDescription = "Change server URL")
+                    IconButton(onClick = { showServerDialog = true }) {
+                        Icon(Icons.Default.Dns, contentDescription = "Server Settings")
                     }
                     if (uiState.application != null) {
                         IconButton(
@@ -316,10 +255,7 @@ fun ApplicationDetailScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text("Retry")
                             }
-                            Button(onClick = {
-                                serverUrlInput = uiState.currentServerUrl
-                                showServerDialog = true
-                            }) {
+                            Button(onClick = { showServerDialog = true }) {
                                 Icon(Icons.Default.Dns, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text("Server URL")
@@ -469,208 +405,6 @@ fun ApplicationDetailScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun ApplicationHeaderCard(
-    application: Application,
-    onOpenLink: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val isDark = isSystemInDarkTheme()
-    val avatarBrush = getCompanyAvatarBrush(application.company)
-    val initial = application.company.firstOrNull()?.uppercaseChar()?.toString() ?: "J"
-    val shape = RoundedCornerShape(22.dp)
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = shape,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(avatarBrush),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = initial,
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = application.company,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = application.role,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
-                StatusBadge(status = application.status)
-            }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-
-            // Metadata Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                ) {
-                    Text(
-                        text = "Source: ${application.source.displayName}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarToday,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.outline
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    val d = application.dateApplied
-                    val formattedDate = "${d.dayOfMonth.toString().padStart(2, '0')}/${d.monthNumber.toString().padStart(2, '0')}/${d.year}"
-                    Text(
-                        text = "Applied $formattedDate",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-            }
-
-            // Job Link (if available)
-            application.jobLink?.let { link ->
-                OutlinedButton(
-                    onClick = { onOpenLink(link) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Open Job Posting Link", maxLines = 1)
-                }
-            }
-
-            // Reminder status
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.NotificationsActive,
-                    contentDescription = null,
-                    modifier = Modifier.size(15.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = if (application.reminderDays != null) "Follow-up nudge: every ${application.reminderDays} days" else "No reminder configured",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun TimelineNoteItem(
-    note: Note,
-    isLast: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top
-    ) {
-        // Timeline tree node
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(28.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-            )
-            if (!isLast) {
-                Box(
-                    modifier = Modifier
-                        .width(2.dp)
-                        .height(56.dp)
-                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // Note Card
-        val shape = RoundedCornerShape(14.dp)
-        Card(
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 10.dp),
-            shape = shape,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp)
-            ) {
-                Text(
-                    text = note.text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = formatRelativeTime(note.createdAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
             }
         }
     }

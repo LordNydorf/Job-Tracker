@@ -27,6 +27,7 @@ data class ApplicationDetailUiState(
     val isDeleting: Boolean = false,
     val newNoteText: String = "",
     val currentServerUrl: String = "",
+    val currentApiKey: String = "",
     val errorMessage: String? = null
 )
 
@@ -38,7 +39,8 @@ class ApplicationDetailViewModel(
 
     private val _uiState = MutableStateFlow(
         ApplicationDetailUiState(
-            currentServerUrl = serverConfig?.getBaseUrl() ?: "http://192.168.0.164:8080"
+            currentServerUrl = serverConfig?.getBaseUrl() ?: ServerConfig.PRESETS.first().url,
+            currentApiKey = serverConfig?.getApiKey() ?: ""
         )
     )
     val uiState: StateFlow<ApplicationDetailUiState> = _uiState.asStateFlow()
@@ -50,9 +52,14 @@ class ApplicationDetailViewModel(
         loadData()
     }
 
-    fun updateServerUrl(newUrl: String) {
-        serverConfig?.setBaseUrl(newUrl)
-        _uiState.update { it.copy(currentServerUrl = newUrl.trim()) }
+    fun updateServerConfig(newUrl: String, newApiKey: String? = null) {
+        serverConfig?.updateConfig(newUrl, newApiKey)
+        _uiState.update {
+            it.copy(
+                currentServerUrl = newUrl.trim(),
+                currentApiKey = newApiKey?.trim() ?: it.currentApiKey
+            )
+        }
         loadData()
     }
 

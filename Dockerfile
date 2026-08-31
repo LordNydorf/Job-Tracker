@@ -35,7 +35,6 @@ USER nobody
 # Default Environment Variables
 ENV PORT=8080
 ENV DATABASE_URL=jdbc:sqlite:/data/jobtracker.db
-ENV API_KEY=dev-secret-key
 
 # Persistent volume for SQLite data
 VOLUME /data

@@ -22,8 +22,15 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.164:8080\"")
-        buildConfigField("String", "API_KEY", "\"dev-secret-key\"")
+        val defaultApiUrl = project.findProperty("API_BASE_URL") as? String
+            ?: System.getenv("API_BASE_URL")
+            ?: "http://10.0.2.2:8080"
+        val defaultApiKey = project.findProperty("API_KEY") as? String
+            ?: System.getenv("API_KEY")
+            ?: ""
+
+        buildConfigField("String", "API_BASE_URL", "\"$defaultApiUrl\"")
+        buildConfigField("String", "API_KEY", "\"$defaultApiKey\"")
     }
 
     buildTypes {

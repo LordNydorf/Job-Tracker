@@ -21,11 +21,11 @@ import io.ktor.http.contentType
 
 class KtorJobTrackerApi(
     private val client: HttpClient,
-    private val serverConfig: ServerConfig,
-    private val apiKey: String = BuildConfig.API_KEY
+    private val serverConfig: ServerConfig
 ) : JobTrackerApi {
 
     private val baseUrl: String get() = serverConfig.getBaseUrl()
+    private val apiKey: String get() = serverConfig.getApiKey()
 
     override suspend fun getApplications(): List<Application> {
         val response = client.get("$baseUrl/applications") {

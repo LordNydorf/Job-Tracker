@@ -8,6 +8,11 @@ application {
     mainClass.set("com.rohit.jobtracker.backend.ApplicationKt")
 }
 
+tasks.named<JavaExec>("run") {
+    environment("ENVIRONMENT", "development")
+    systemProperty("io.ktor.development", "true")
+}
+
 kotlin {
     jvmToolchain(21)
 }

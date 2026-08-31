@@ -62,7 +62,7 @@ graph TD
 
 ## 📡 REST API Reference
 
-All protected endpoints require the `X-API-Key` header (defaults to `dev-secret-key`).
+All protected endpoints require the `X-API-Key` header with your configured API key.
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -85,11 +85,11 @@ You can build and run the backend container locally with persistent SQLite stora
 # 1. Build Docker image
 docker build -t job-tracker-backend .
 
-# 2. Run container with persistent volume
+# 2. Run container with persistent volume and your custom API key
 docker run -d \
   -p 8080:8080 \
   -e PORT=8080 \
-  -e API_KEY=dev-secret-key \
+  -e API_KEY=your-secure-secret-key \
   -v jobtracker-data:/data \
   --name job-tracker \
   job-tracker-backend

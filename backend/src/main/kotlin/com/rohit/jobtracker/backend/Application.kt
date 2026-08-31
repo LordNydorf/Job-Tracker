@@ -27,7 +27,8 @@ fun main() {
 
 fun Application.module(
     repository: JobTrackerRepository = JobTrackerRepositoryImpl(),
-    initDb: Boolean = true
+    initDb: Boolean = true,
+    apiKey: String? = null
 ) {
     if (initDb) {
         val jdbcUrl = System.getenv("DATABASE_URL") ?: "jdbc:sqlite:data/jobtracker.db"
@@ -45,7 +46,7 @@ fun Application.module(
     }
 
     configureStatusPages()
-    configureSecurity()
+    configureSecurity(apiKey = apiKey)
 
     routing {
         get("/") {

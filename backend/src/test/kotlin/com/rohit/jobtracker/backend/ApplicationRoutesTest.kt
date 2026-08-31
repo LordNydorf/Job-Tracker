@@ -46,7 +46,7 @@ class ApplicationRoutesTest {
     @Test
     fun testHealthAndRootPublicEndpoints() = testApplication {
         application {
-            module(repository = JobTrackerRepositoryImpl(), initDb = false)
+            module(repository = JobTrackerRepositoryImpl(), initDb = false, apiKey = validApiKey)
         }
 
         val rootResponse = client.get("/")
@@ -60,7 +60,7 @@ class ApplicationRoutesTest {
     @Test
     fun testAuthRejectsMissingOrInvalidApiKey() = testApplication {
         application {
-            module(repository = JobTrackerRepositoryImpl(), initDb = false)
+            module(repository = JobTrackerRepositoryImpl(), initDb = false, apiKey = validApiKey)
         }
 
         // Missing X-API-Key
@@ -83,7 +83,7 @@ class ApplicationRoutesTest {
         }
 
         application {
-            module(repository = JobTrackerRepositoryImpl(), initDb = false)
+            module(repository = JobTrackerRepositoryImpl(), initDb = false, apiKey = validApiKey)
         }
 
         // 1. Create Application
@@ -190,7 +190,7 @@ class ApplicationRoutesTest {
         }
 
         application {
-            module(repository = JobTrackerRepositoryImpl(), initDb = false)
+            module(repository = JobTrackerRepositoryImpl(), initDb = false, apiKey = validApiKey)
         }
 
         // Blank company

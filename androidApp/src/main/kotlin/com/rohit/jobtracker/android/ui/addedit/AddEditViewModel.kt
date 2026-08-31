@@ -26,7 +26,7 @@ data class AddEditUiState(
     val dateApplied: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
     val jobLink: String = "",
     val status: Status = Status.APPLIED,
-    val reminderDays: String = "7",
+    val reminderDays: Int? = 7,
     val isSaving: Boolean = false,
     val companyError: String? = null,
     val roleError: String? = null,
@@ -67,11 +67,11 @@ class AddEditViewModel(
         _uiState.update { it.copy(status = value) }
     }
 
-    fun updateReminderDays(value: String) {
+    fun updateReminderDays(value: Int?) {
         _uiState.update { it.copy(reminderDays = value) }
     }
 
-    fun saveApplication() {
+    fun saveApplication(): Boolean {
         val state = _uiState.value
         var hasError = false
 
@@ -85,12 +85,11 @@ class AddEditViewModel(
             hasError = true
         }
 
-        if (hasError) return
+        if (hasError) return false
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, generalError = null) }
             try {
-                val reminderInt = state.reminderDays.toIntOrNull()
                 val request = CreateApplicationRequest(
                     company = state.company.trim(),
                     role = state.role.trim(),
@@ -98,7 +97,7 @@ class AddEditViewModel(
                     dateApplied = state.dateApplied,
                     jobLink = state.jobLink.trim().takeIf { it.isNotEmpty() },
                     status = state.status,
-                    reminderDays = reminderInt
+                    reminderDays = state.reminderDays
                 )
                 api.createApplication(request)
                 _uiState.update { it.copy(isSaving = false) }
@@ -112,5 +111,6 @@ class AddEditViewModel(
                 }
             }
         }
+        return true
     }
 }

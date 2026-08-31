@@ -36,6 +36,7 @@ data class ApplicationListUiState(
     val sortOption: SortOption = SortOption.LAST_UPDATED,
     val searchQuery: String = "",
     val currentServerUrl: String = "",
+    val currentApiKey: String = "",
     val errorMessage: String? = null
 )
 
@@ -47,7 +48,8 @@ class ApplicationListViewModel(
     private val _uiState = MutableStateFlow(
         ApplicationListUiState(
             isLoading = true,
-            currentServerUrl = serverConfig?.getBaseUrl() ?: "http://192.168.0.164:8080"
+            currentServerUrl = serverConfig?.getBaseUrl() ?: ServerConfig.PRESETS.first().url,
+            currentApiKey = serverConfig?.getApiKey() ?: ""
         )
     )
     val uiState: StateFlow<ApplicationListUiState> = _uiState.asStateFlow()
@@ -90,9 +92,14 @@ class ApplicationListViewModel(
         }
     }
 
-    fun updateServerUrl(newUrl: String) {
-        serverConfig?.setBaseUrl(newUrl)
-        _uiState.update { it.copy(currentServerUrl = newUrl.trim()) }
+    fun updateServerConfig(newUrl: String, newApiKey: String? = null) {
+        serverConfig?.updateConfig(newUrl, newApiKey)
+        _uiState.update {
+            it.copy(
+                currentServerUrl = newUrl.trim(),
+                currentApiKey = newApiKey?.trim() ?: it.currentApiKey
+            )
+        }
         loadApplications()
     }
 

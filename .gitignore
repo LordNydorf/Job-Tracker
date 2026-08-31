@@ -13,3 +13,11 @@ Captures/
 *.apk
 *.aab
 .agents
+
+# Databases & Runtime Data
+backend/data/
+data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
