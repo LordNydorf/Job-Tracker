@@ -3,6 +3,9 @@ FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /app
 
+# Install bash and dos2unix for building on Alpine
+RUN apk add --no-cache bash dos2unix
+
 # Copy gradle wrapper and config files
 COPY gradle gradle
 COPY gradlew gradlew
@@ -11,17 +14,23 @@ COPY gradle.properties gradle.properties
 COPY settings.gradle.kts settings.gradle.kts
 COPY build.gradle.kts build.gradle.kts
 
+# Fix any Windows CRLF line endings in gradlew
+RUN dos2unix gradlew && chmod +x gradlew
+
 # Copy source modules
 COPY shared shared
 COPY backend backend
 
-# Make gradlew executable and build the backend distribution
-RUN chmod +x gradlew && ./gradlew :backend:installDist --no-daemon
+# Build the backend distribution
+RUN ./gradlew :backend:installDist --no-daemon
 
 # Stage 2: Lean runtime stage with JRE 21
 FROM eclipse-temurin:21-jre-alpine AS runner
 
 WORKDIR /app
+
+# Install bash for the startup script
+RUN apk add --no-cache bash
 
 # Create persistent data directory for SQLite
 RUN mkdir -p /data && chown -R nobody:nobody /data /app
