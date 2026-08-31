@@ -8,6 +8,7 @@ import com.rohit.jobtracker.android.ui.list.ApplicationListViewModel
 import com.rohit.jobtracker.shared.api.JobTrackerApi
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -22,6 +23,11 @@ val appModule = module {
 
     single {
         HttpClient(OkHttp) {
+            install(HttpTimeout) {
+                requestTimeoutMillis = 6000
+                connectTimeoutMillis = 5000
+                socketTimeoutMillis = 6000
+            }
             install(ContentNegotiation) {
                 json(Json {
                     prettyPrint = true
@@ -41,5 +47,5 @@ val appModule = module {
 
     viewModel { ApplicationListViewModel(api = get(), serverConfig = get()) }
     viewModel { AddEditViewModel(api = get()) }
-    viewModel { (applicationId: String) -> ApplicationDetailViewModel(applicationId = applicationId, api = get()) }
+    viewModel { (applicationId: String) -> ApplicationDetailViewModel(applicationId = applicationId, api = get(), serverConfig = get()) }
 }

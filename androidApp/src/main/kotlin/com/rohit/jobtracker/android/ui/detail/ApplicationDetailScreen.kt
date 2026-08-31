@@ -26,8 +26,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.OpenInBrowser
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -84,12 +86,70 @@ fun ApplicationDetailScreen(
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showServerDialog by remember { mutableStateOf(false) }
+    var serverUrlInput by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.deleteSuccessEvent.collect {
             Toast.makeText(context, "Application deleted", Toast.LENGTH_SHORT).show()
             onNavigateBack()
         }
+    }
+
+    if (showServerDialog) {
+        AlertDialog(
+            onDismissRequest = { showServerDialog = false },
+            title = { Text("Backend Server URL") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Set backend IP for physical device or emulator.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = serverUrlInput,
+                        onValueChange = { serverUrlInput = it },
+                        label = { Text("Server Base URL") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Text("Quick Presets:", style = MaterialTheme.typography.labelSmall)
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        SuggestionChip(
+                            onClick = { serverUrlInput = "http://192.168.0.164:8080" },
+                            label = { Text("Wi-Fi IP") }
+                        )
+                        SuggestionChip(
+                            onClick = { serverUrlInput = "http://127.0.0.1:8080" },
+                            label = { Text("USB (127.0.0.1)") }
+                        )
+                        SuggestionChip(
+                            onClick = { serverUrlInput = "http://10.0.2.2:8080" },
+                            label = { Text("Emulator") }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (serverUrlInput.isNotBlank()) {
+                        viewModel.updateServerUrl(serverUrlInput)
+                    }
+                    showServerDialog = false
+                }) {
+                    Text("Save & Connect")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showServerDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     if (showDeleteDialog) {
@@ -126,15 +186,23 @@ fun ApplicationDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = { showDeleteDialog = true },
-                        enabled = !uiState.isDeleting
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete application",
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                    IconButton(onClick = {
+                        serverUrlInput = uiState.currentServerUrl
+                        showServerDialog = true
+                    }) {
+                        Icon(Icons.Default.Dns, contentDescription = "Change server URL")
+                    }
+                    if (uiState.application != null) {
+                        IconButton(
+                            onClick = { showDeleteDialog = true },
+                            enabled = !uiState.isDeleting
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete application",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -159,14 +227,48 @@ fun ApplicationDetailScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
+                        .padding(innerPadding)
+                        .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(uiState.errorMessage ?: "Application not found", style = MaterialTheme.typography.titleMedium)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onNavigateBack) {
-                            Text("Go Back")
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = uiState.errorMessage ?: "Cannot reach backend server.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedButton(onClick = { viewModel.loadData() }) {
+                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Retry")
+                            }
+                            Button(onClick = {
+                                serverUrlInput = uiState.currentServerUrl
+                                showServerDialog = true
+                            }) {
+                                Icon(Icons.Default.Dns, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Server URL")
+                            }
+                        }
+
+                        TextButton(onClick = onNavigateBack) {
+                            Text("Go Back to List")
                         }
                     }
                 }

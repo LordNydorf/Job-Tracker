@@ -2,6 +2,7 @@ package com.rohit.jobtracker.android.ui.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rohit.jobtracker.android.network.ServerConfig
 import com.rohit.jobtracker.shared.api.JobTrackerApi
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.CreateNoteRequest
@@ -25,21 +26,33 @@ data class ApplicationDetailUiState(
     val isUpdatingStatus: Boolean = false,
     val isDeleting: Boolean = false,
     val newNoteText: String = "",
+    val currentServerUrl: String = "",
     val errorMessage: String? = null
 )
 
 class ApplicationDetailViewModel(
     private val applicationId: String,
-    private val api: JobTrackerApi
+    private val api: JobTrackerApi,
+    private val serverConfig: ServerConfig? = null
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ApplicationDetailUiState())
+    private val _uiState = MutableStateFlow(
+        ApplicationDetailUiState(
+            currentServerUrl = serverConfig?.getBaseUrl() ?: "http://192.168.0.164:8080"
+        )
+    )
     val uiState: StateFlow<ApplicationDetailUiState> = _uiState.asStateFlow()
 
     private val _deleteSuccessEvent = MutableSharedFlow<Unit>()
     val deleteSuccessEvent: SharedFlow<Unit> = _deleteSuccessEvent.asSharedFlow()
 
     init {
+        loadData()
+    }
+
+    fun updateServerUrl(newUrl: String) {
+        serverConfig?.setBaseUrl(newUrl)
+        _uiState.update { it.copy(currentServerUrl = newUrl.trim()) }
         loadData()
     }
 
@@ -54,7 +67,7 @@ class ApplicationDetailViewModel(
                         isLoading = false,
                         application = app,
                         notes = notes,
-                        errorMessage = if (app == null) "Application not found" else null
+                        errorMessage = if (app == null) "Application not found on server" else null
                     )
                 }
             } catch (e: Exception) {
