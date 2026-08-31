@@ -60,7 +60,7 @@ fun StatusPipelineStepper(
                 enabled = enabled,
                 label = {
                     Text(
-                        text = status.name,
+                        text = status.displayName,
                         fontSize = 12.5.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                     )

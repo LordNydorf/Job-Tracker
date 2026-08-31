@@ -545,7 +545,7 @@ fun ApplicationHeaderCard(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                 ) {
                     Text(
-                        text = "Source: ${application.source.name}",
+                        text = "Source: ${application.source.displayName}",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -561,8 +561,10 @@ fun ApplicationHeaderCard(
                         tint = MaterialTheme.colorScheme.outline
                     )
                     Spacer(modifier = Modifier.width(4.dp))
+                    val d = application.dateApplied
+                    val formattedDate = "${d.dayOfMonth.toString().padStart(2, '0')}/${d.monthNumber.toString().padStart(2, '0')}/${d.year}"
                     Text(
-                        text = "Applied ${application.dateApplied}",
+                        text = "Applied $formattedDate",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )

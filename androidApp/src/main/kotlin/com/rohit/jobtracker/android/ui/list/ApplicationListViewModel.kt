@@ -13,13 +13,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class StatusFilter {
-    ALL,
-    APPLIED,
-    SCREENING,
-    INTERVIEW,
-    OFFER,
-    CLOSED
+enum class StatusFilter(val displayName: String) {
+    ALL("All"),
+    APPLIED("Applied"),
+    SCREENING("Screening"),
+    INTERVIEW("Interview"),
+    OFFER("Offer"),
+    CLOSED("Closed")
 }
 
 enum class SortOption(val displayName: String) {
@@ -47,7 +47,7 @@ class ApplicationListViewModel(
     private val _uiState = MutableStateFlow(
         ApplicationListUiState(
             isLoading = true,
-            currentServerUrl = serverConfig?.getBaseUrl() ?: "http://10.0.2.2:8080"
+            currentServerUrl = serverConfig?.getBaseUrl() ?: "http://192.168.0.164:8080"
         )
     )
     val uiState: StateFlow<ApplicationListUiState> = _uiState.asStateFlow()
@@ -144,7 +144,7 @@ class ApplicationListViewModel(
             list.filter {
                 it.company.lowercase().contains(q) ||
                         it.role.lowercase().contains(q) ||
-                        it.source.name.lowercase().contains(q)
+                        it.source.displayName.lowercase().contains(q)
             }
         }
 

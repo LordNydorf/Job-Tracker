@@ -63,11 +63,11 @@ fun StatusBadge(
                 Spacer(modifier = Modifier.width(6.dp))
             }
             Text(
-                text = status.name,
+                text = status.displayName,
                 color = txtColor,
                 fontSize = 11.5.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 0.4.sp
+                letterSpacing = 0.2.sp
             )
         }
     }

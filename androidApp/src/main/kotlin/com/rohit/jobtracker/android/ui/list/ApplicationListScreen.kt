@@ -323,7 +323,7 @@ fun ApplicationListScreen(
                         onClick = { viewModel.setFilter(filter) },
                         label = {
                             Text(
-                                text = "${filter.name} ($count)",
+                                text = "${filter.displayName} ($count)",
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                             )
                         },
@@ -470,7 +470,7 @@ fun ApplicationCard(
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                     ) {
                         Text(
-                            text = application.source.name,
+                            text = application.source.displayName,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

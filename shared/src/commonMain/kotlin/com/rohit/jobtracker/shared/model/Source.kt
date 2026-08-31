@@ -3,12 +3,12 @@ package com.rohit.jobtracker.shared.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class Source {
-    WELLFOUND,
-    UPWORK,
-    CONTRA,
-    BRAINTRUST,
-    TOPTAL,
-    REFERRAL,
-    OTHER
+enum class Source(val displayName: String) {
+    WELLFOUND("Wellfound"),
+    UPWORK("Upwork"),
+    CONTRA("Contra"),
+    BRAINTRUST("Braintrust"),
+    TOPTAL("Toptal"),
+    REFERRAL("Referral"),
+    OTHER("Other")
 }
