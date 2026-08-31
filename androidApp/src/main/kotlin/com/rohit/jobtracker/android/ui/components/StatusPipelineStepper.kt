@@ -1,0 +1,75 @@
+package com.rohit.jobtracker.android.ui.components
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.rohit.jobtracker.android.ui.theme.StatusGhostedBorder
+import com.rohit.jobtracker.android.ui.theme.backgroundColor
+import com.rohit.jobtracker.android.ui.theme.textColor
+import com.rohit.jobtracker.shared.model.Status
+
+@Composable
+fun StatusPipelineStepper(
+    currentStatus: Status,
+    onStatusSelected: (Status) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    val scrollState = rememberScrollState()
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(scrollState)
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Status.entries.forEach { status ->
+            val isSelected = status == currentStatus
+
+            FilterChip(
+                selected = isSelected,
+                onClick = { if (!isSelected) onStatusSelected(status) },
+                enabled = enabled,
+                label = {
+                    Text(
+                        text = status.name,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
+                },
+                leadingIcon = if (isSelected) {
+                    {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Selected status",
+                            tint = status.textColor()
+                        )
+                    }
+                } else null,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = status.backgroundColor(),
+                    selectedLabelColor = status.textColor()
+                ),
+                border = if (isSelected && status == Status.GHOSTED) {
+                    BorderStroke(1.5.dp, StatusGhostedBorder)
+                } else null,
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+    }
+}

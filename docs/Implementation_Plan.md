@@ -17,11 +17,11 @@
 - [x] Basic error handling: 404 for missing IDs, 400 for malformed bodies.
 
 ## Phase 3 — Android UI (Day 3–5)
-- [ ] Set up Koin DI, Navigation Compose skeleton.
-- [ ] Build List screen with hardcoded/mock data first (unblock UI work from backend readiness).
-- [ ] Build Add/Edit screen.
-- [ ] Build Detail screen with notes feed.
-- [ ] Wire Ktor client implementation of `JobTrackerApi`, swap mock data for real network calls.
+- [x] Set up Koin DI, Navigation Compose skeleton.
+- [x] Build List screen with hardcoded/mock data first (unblock UI work from backend readiness).
+- [x] Build Add/Edit screen.
+- [x] Build Detail screen with notes feed.
+- [x] Wire Ktor client implementation of `JobTrackerApi`, swap mock data for real network calls.
 
 ## Phase 4 — Integration (Day 5–6)
 - [ ] End-to-end test: add application on device → confirm it persists in backend DB → kill and reopen app → confirm data loads from server, not just local state.
