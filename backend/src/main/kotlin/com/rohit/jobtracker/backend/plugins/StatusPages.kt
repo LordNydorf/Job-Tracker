@@ -22,9 +22,13 @@ fun Application.configureStatusPages() {
             )
         }
         exception<Throwable> { call, cause ->
+            cause.printStackTrace()
             call.respond(
                 HttpStatusCode.InternalServerError,
-                mapOf("error" to (cause.message ?: "An unexpected internal server error occurred"))
+                mapOf(
+                    "error" to (cause.message ?: "An unexpected internal server error occurred"),
+                    "cause" to (cause.cause?.message ?: "none")
+                )
             )
         }
     }

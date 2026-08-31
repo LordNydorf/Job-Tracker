@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,6 +44,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
@@ -209,6 +211,63 @@ fun ApplicationDetailScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
+        },
+        bottomBar = {
+            if (uiState.application != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 4.dp,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.imePadding().navigationBarsPadding()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = uiState.newNoteText,
+                            onValueChange = { viewModel.updateNewNoteText(it) },
+                            placeholder = { Text("Add interview note, feedback...", fontSize = 14.sp) },
+                            modifier = Modifier.weight(1f),
+                            maxLines = 3,
+                            shape = RoundedCornerShape(20.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        IconButton(
+                            onClick = { viewModel.addNote() },
+                            enabled = uiState.newNoteText.isNotBlank() && !uiState.isAddingNote,
+                            modifier = Modifier
+                                .size(46.dp)
+                                .background(
+                                    color = if (uiState.newNoteText.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            if (uiState.isAddingNote) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
+                                    contentDescription = "Send Note",
+                                    tint = if (uiState.newNoteText.isNotBlank()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     ) { innerPadding ->
         when {
@@ -277,191 +336,137 @@ fun ApplicationDetailScreen(
             else -> {
                 val app = uiState.application!!
 
-                Column(
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .imePadding()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // 1. Pipeline Stepper Section
-                        item {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Pipeline Stage (1-Tap Progression)",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                letterSpacing = 0.4.sp
-                            )
-                            StatusPipelineStepper(
-                                currentStatus = app.status,
-                                onStatusSelected = { newStatus -> viewModel.updateStatus(newStatus) },
-                                enabled = !uiState.isUpdatingStatus
-                            )
-                        }
+                    // 1. Pipeline Stepper Section
+                    item {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Pipeline Stage (1-Tap Progression)",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            letterSpacing = 0.4.sp
+                        )
+                        StatusPipelineStepper(
+                            currentStatus = app.status,
+                            onStatusSelected = { newStatus -> viewModel.updateStatus(newStatus) },
+                            enabled = !uiState.isUpdatingStatus
+                        )
+                    }
 
-                        // 2. Main Details Header Card
-                        item {
-                            ApplicationHeaderCard(
-                                application = app,
-                                onOpenLink = { url ->
-                                    try {
-                                        uriHandler.openUri(url)
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "Cannot open link", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            )
-                        }
-
-                        // 3. Quick Note Suggestions
-                        item {
-                            Text(
-                                text = "Quick Updates",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                letterSpacing = 0.4.sp
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(
-                                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                val suggestions = listOf(
-                                    "Sent follow-up email",
-                                    "1st round interview scheduled",
-                                    "Completed technical take-home",
-                                    "Final round with team lead",
-                                    "Received offer letter"
-                                )
-                                suggestions.forEach { suggestion ->
-                                    SuggestionChip(
-                                        onClick = {
-                                            viewModel.updateNewNoteText(suggestion)
-                                            viewModel.addNote()
-                                        },
-                                        label = { Text("+ $suggestion", fontSize = 12.sp) },
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
+                    // 2. Main Details Header Card
+                    item {
+                        ApplicationHeaderCard(
+                            application = app,
+                            onOpenLink = { url ->
+                                try {
+                                    uriHandler.openUri(url)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Cannot open link", Toast.LENGTH_SHORT).show()
                                 }
                             }
-                        }
+                        )
+                    }
 
-                        // 4. Notes & Timeline Header
-                        item {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Activity & Interview Log",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                ) {
-                                    Text(
-                                        text = "${uiState.notes.size} entries",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        // 5. Notes Timeline List
-                        if (uiState.notes.isEmpty()) {
-                            item {
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                                ) {
-                                    Text(
-                                        text = "No notes recorded yet. Record interviewer questions, prep links, or quick updates above.",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.padding(18.dp)
-                                    )
-                                }
-                            }
-                        } else {
-                            itemsIndexed(
-                                items = uiState.notes,
-                                key = { _, note -> note.id }
-                            ) { index, note ->
-                                TimelineNoteItem(
-                                    note = note,
-                                    isLast = index == uiState.notes.lastIndex
+                    // 3. Quick Note Suggestions
+                    item {
+                        Text(
+                            text = "Quick Updates",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            letterSpacing = 0.4.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val suggestions = listOf(
+                                "Sent follow-up email",
+                                "1st round interview scheduled",
+                                "Completed technical take-home",
+                                "Final round with team lead",
+                                "Received offer letter"
+                            )
+                            suggestions.forEach { suggestion ->
+                                SuggestionChip(
+                                    onClick = {
+                                        viewModel.updateNewNoteText(suggestion)
+                                        viewModel.addNote()
+                                    },
+                                    label = { Text("+ $suggestion", fontSize = 12.sp) },
+                                    shape = RoundedCornerShape(12.dp)
                                 )
                             }
-                        }
-
-                        item {
-                            Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
 
-                    // Bottom Note Composer Bar
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.surface
-                    ) {
+                    // 4. Notes & Timeline Header
+                    item {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(12.dp),
+                                .padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            OutlinedTextField(
-                                value = uiState.newNoteText,
-                                onValueChange = { viewModel.updateNewNoteText(it) },
-                                placeholder = { Text("Add interview questions, feedback...") },
-                                modifier = Modifier.weight(1f),
-                                maxLines = 3,
-                                shape = RoundedCornerShape(24.dp)
+                            Text(
+                                text = "Activity & Interview Log",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            IconButton(
-                                onClick = { viewModel.addNote() },
-                                enabled = uiState.newNoteText.isNotBlank() && !uiState.isAddingNote,
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        color = if (uiState.newNoteText.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                        shape = CircleShape
-                                    )
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                             ) {
-                                if (uiState.isAddingNote) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        strokeWidth = 2.dp
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.Send,
-                                        contentDescription = "Send Note",
-                                        tint = if (uiState.newNoteText.isNotBlank()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                Text(
+                                    text = "${uiState.notes.size} entries",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
                             }
                         }
+                    }
+
+                    // 5. Notes Timeline List
+                    if (uiState.notes.isEmpty()) {
+                        item {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                            ) {
+                                Text(
+                                    text = "No notes recorded yet. Record interviewer questions, prep links, or quick updates above.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.outline,
+                                    modifier = Modifier.padding(18.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        itemsIndexed(
+                            items = uiState.notes,
+                            key = { _, note -> note.id }
+                        ) { index, note ->
+                            TimelineNoteItem(
+                                note = note,
+                                isLast = index == uiState.notes.lastIndex
+                            )
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
@@ -478,10 +483,11 @@ fun ApplicationHeaderCard(
     val isDark = isSystemInDarkTheme()
     val avatarBrush = getCompanyAvatarBrush(application.company)
     val initial = application.company.firstOrNull()?.uppercaseChar()?.toString() ?: "J"
+    val shape = RoundedCornerShape(22.dp)
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
         ),
@@ -637,11 +643,12 @@ fun TimelineNoteItem(
         Spacer(modifier = Modifier.width(8.dp))
 
         // Note Card
+        val shape = RoundedCornerShape(14.dp)
         Card(
             modifier = Modifier
                 .weight(1f)
                 .padding(bottom = 10.dp),
-            shape = RoundedCornerShape(14.dp),
+            shape = shape,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
             )

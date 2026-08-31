@@ -39,6 +39,8 @@ fun Application.module(
             prettyPrint = true
             isLenient = true
             ignoreUnknownKeys = true
+            explicitNulls = false
+            coerceInputValues = true
         })
     }
 

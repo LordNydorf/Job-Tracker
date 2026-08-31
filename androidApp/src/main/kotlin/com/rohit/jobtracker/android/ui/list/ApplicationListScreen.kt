@@ -400,11 +400,11 @@ fun ApplicationCard(
     val isOverdue = (application.status == Status.APPLIED || application.status == Status.SCREENING || application.status == Status.INTERVIEW) &&
             application.reminderDays != null && daysSinceUpdate >= application.reminderDays!!
 
+    val shape = RoundedCornerShape(20.dp)
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
         ),
