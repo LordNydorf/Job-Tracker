@@ -6,9 +6,9 @@
 - [x] Set up Git repo, initial commit.
 
 ## Phase 1 — Shared Models (Day 1–2)
-- [ ] Define `Application`, `Note`, `Status`, `Source` in `shared`, with `kotlinx.serialization`.
-- [ ] Define `JobTrackerApi` interface (method signatures only, no implementation yet).
-- [ ] Unit test serialization round-trips.
+- [x] Define `Application`, `Note`, `Status`, `Source` in `shared`, with `kotlinx.serialization`.
+- [x] Define `JobTrackerApi` interface (method signatures only, no implementation yet).
+- [x] Unit test serialization round-trips.
 
 ## Phase 2 — Backend (Day 2–3)
 - [ ] Set up Exposed + SQLite, define table schema matching `shared` models.

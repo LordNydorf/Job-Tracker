@@ -1,0 +1,31 @@
+package com.rohit.jobtracker.shared.model
+
+import kotlinx.datetime.LocalDate
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class CreateApplicationRequest(
+    val company: String,
+    val role: String,
+    val source: Source,
+    val dateApplied: LocalDate,
+    val jobLink: String? = null,
+    val status: Status = Status.APPLIED,
+    val reminderDays: Int? = null
+)
+
+@Serializable
+data class UpdateApplicationRequest(
+    val company: String? = null,
+    val role: String? = null,
+    val source: Source? = null,
+    val dateApplied: LocalDate? = null,
+    val jobLink: String? = null,
+    val status: Status? = null,
+    val reminderDays: Int? = null
+)
+
+@Serializable
+data class CreateNoteRequest(
+    val text: String
+)
