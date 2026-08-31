@@ -2,6 +2,7 @@ package com.rohit.jobtracker.android.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rohit.jobtracker.android.network.ServerConfig
 import com.rohit.jobtracker.shared.api.JobTrackerApi
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Status
@@ -32,14 +33,21 @@ data class ApplicationListUiState(
     val filteredApplications: List<Application> = emptyList(),
     val statusFilter: StatusFilter = StatusFilter.ALL,
     val sortOption: SortOption = SortOption.LAST_UPDATED,
+    val currentServerUrl: String = "",
     val errorMessage: String? = null
 )
 
 class ApplicationListViewModel(
-    private val api: JobTrackerApi
+    private val api: JobTrackerApi,
+    private val serverConfig: ServerConfig? = null
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ApplicationListUiState(isLoading = true))
+    private val _uiState = MutableStateFlow(
+        ApplicationListUiState(
+            isLoading = true,
+            currentServerUrl = serverConfig?.getBaseUrl() ?: "http://10.0.2.2:8080"
+        )
+    )
     val uiState: StateFlow<ApplicationListUiState> = _uiState.asStateFlow()
 
     init {
@@ -64,11 +72,17 @@ class ApplicationListViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = e.message ?: "Unable to load applications. Is the backend server running?"
+                        errorMessage = e.message ?: "Unable to connect to backend server."
                     )
                 }
             }
         }
+    }
+
+    fun updateServerUrl(newUrl: String) {
+        serverConfig?.setBaseUrl(newUrl)
+        _uiState.update { it.copy(currentServerUrl = newUrl.trim()) }
+        loadApplications()
     }
 
     fun setFilter(filter: StatusFilter) {

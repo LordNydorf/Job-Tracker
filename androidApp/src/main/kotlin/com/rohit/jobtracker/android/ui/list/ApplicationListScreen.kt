@@ -21,11 +21,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.WorkOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,10 +39,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -72,6 +74,64 @@ fun ApplicationListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showSortMenu by remember { mutableStateOf(false) }
+    var showServerDialog by remember { mutableStateOf(false) }
+    var serverUrlInput by remember { mutableStateOf("") }
+
+    if (showServerDialog) {
+        AlertDialog(
+            onDismissRequest = { showServerDialog = false },
+            title = { Text("Backend Server URL") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Set the Ktor backend address for physical device or emulator testing.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = serverUrlInput,
+                        onValueChange = { serverUrlInput = it },
+                        label = { Text("Server Base URL") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Text("Quick Presets:", style = MaterialTheme.typography.labelSmall)
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        SuggestionChip(
+                            onClick = { serverUrlInput = "http://192.168.0.164:8080" },
+                            label = { Text("Wi-Fi IP") }
+                        )
+                        SuggestionChip(
+                            onClick = { serverUrlInput = "http://127.0.0.1:8080" },
+                            label = { Text("USB (127.0.0.1)") }
+                        )
+                        SuggestionChip(
+                            onClick = { serverUrlInput = "http://10.0.2.2:8080" },
+                            label = { Text("Emulator") }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (serverUrlInput.isNotBlank()) {
+                        viewModel.updateServerUrl(serverUrlInput)
+                    }
+                    showServerDialog = false
+                }) {
+                    Text("Save & Connect")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showServerDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -101,6 +161,12 @@ fun ApplicationListScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = {
+                        serverUrlInput = uiState.currentServerUrl
+                        showServerDialog = true
+                    }) {
+                        Icon(Icons.Default.Dns, contentDescription = "Change server URL")
+                    }
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort applications")
@@ -155,24 +221,30 @@ fun ApplicationListScreen(
                     color = MaterialTheme.colorScheme.errorContainer,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .padding(16.dp)
                     ) {
                         Text(
                             text = error,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.weight(1f)
+                            color = MaterialTheme.colorScheme.onErrorContainer
                         )
-                        OutlinedButton(
-                            onClick = { viewModel.loadApplications() },
-                            modifier = Modifier.padding(start = 8.dp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Retry")
+                            OutlinedButton(onClick = { viewModel.loadApplications() }) {
+                                Text("Retry")
+                            }
+                            Button(onClick = {
+                                serverUrlInput = uiState.currentServerUrl
+                                showServerDialog = true
+                            }) {
+                                Text("Change Server URL")
+                            }
                         }
                     }
                 }

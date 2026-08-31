@@ -21,9 +21,11 @@ import io.ktor.http.contentType
 
 class KtorJobTrackerApi(
     private val client: HttpClient,
-    private val baseUrl: String = BuildConfig.API_BASE_URL,
+    private val serverConfig: ServerConfig,
     private val apiKey: String = BuildConfig.API_KEY
 ) : JobTrackerApi {
+
+    private val baseUrl: String get() = serverConfig.getBaseUrl()
 
     override suspend fun getApplications(): List<Application> {
         val response = client.get("$baseUrl/applications") {
@@ -32,7 +34,7 @@ class KtorJobTrackerApi(
         if (response.status == HttpStatusCode.OK) {
             return response.body()
         }
-        throw Exception("Failed to load applications: ${response.status}")
+        throw Exception("Failed to load applications (${response.status.value}): ${response.status.description}")
     }
 
     override suspend fun getApplication(id: String): Application? {
@@ -42,7 +44,7 @@ class KtorJobTrackerApi(
         return when (response.status) {
             HttpStatusCode.OK -> response.body()
             HttpStatusCode.NotFound -> null
-            else -> throw Exception("Failed to load application $id: ${response.status}")
+            else -> throw Exception("Failed to load application $id (${response.status.value})")
         }
     }
 
@@ -55,7 +57,7 @@ class KtorJobTrackerApi(
         if (response.status == HttpStatusCode.Created || response.status == HttpStatusCode.OK) {
             return response.body()
         }
-        throw Exception("Failed to create application: ${response.status}")
+        throw Exception("Failed to create application (${response.status.value})")
     }
 
     override suspend fun updateApplication(id: String, request: UpdateApplicationRequest): Application {
@@ -67,7 +69,7 @@ class KtorJobTrackerApi(
         if (response.status == HttpStatusCode.OK) {
             return response.body()
         }
-        throw Exception("Failed to update application $id: ${response.status}")
+        throw Exception("Failed to update application $id (${response.status.value})")
     }
 
     override suspend fun deleteApplication(id: String): Boolean {
@@ -87,7 +89,7 @@ class KtorJobTrackerApi(
         if (response.status == HttpStatusCode.NotFound) {
             return emptyList()
         }
-        throw Exception("Failed to load notes for $applicationId: ${response.status}")
+        throw Exception("Failed to load notes (${response.status.value})")
     }
 
     override suspend fun addNote(applicationId: String, request: CreateNoteRequest): Note {
@@ -99,6 +101,6 @@ class KtorJobTrackerApi(
         if (response.status == HttpStatusCode.Created || response.status == HttpStatusCode.OK) {
             return response.body()
         }
-        throw Exception("Failed to add note: ${response.status}")
+        throw Exception("Failed to add note (${response.status.value})")
     }
 }
