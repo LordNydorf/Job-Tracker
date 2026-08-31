@@ -11,10 +11,10 @@
 - [x] Unit test serialization round-trips.
 
 ## Phase 2 — Backend (Day 2–3)
-- [ ] Set up Exposed + SQLite, define table schema matching `shared` models.
-- [ ] Implement CRUD routes: `GET/POST /applications`, `GET/PATCH/DELETE /applications/{id}`, `POST /applications/{id}/notes`.
-- [ ] Manual test via curl/Postman/Bruno before touching the Android app.
-- [ ] Basic error handling: 404 for missing IDs, 400 for malformed bodies.
+- [x] Set up Exposed + SQLite, define table schema matching `shared` models.
+- [x] Implement CRUD routes: `GET/POST /applications`, `GET/PATCH/DELETE /applications/{id}`, `POST /applications/{id}/notes`.
+- [x] Manual test via curl/Postman/Bruno before touching the Android app.
+- [x] Basic error handling: 404 for missing IDs, 400 for malformed bodies.
 
 ## Phase 3 — Android UI (Day 3–5)
 - [ ] Set up Koin DI, Navigation Compose skeleton.
