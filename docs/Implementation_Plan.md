@@ -1,9 +1,9 @@
 # Implementation Plan — Job Application Tracker
 
 ## Phase 0 — Scaffold (Day 1)
-- [ ] Generate KMP project via kmp.jetbrains.com wizard (shared + androidApp + backend modules).
-- [ ] Confirm project builds and runs (empty Android app, empty Ktor "hello world" route).
-- [ ] Set up Git repo, initial commit.
+- [x] Generate KMP project via kmp.jetbrains.com wizard (shared + androidApp + backend modules).
+- [x] Confirm project builds and runs (empty Android app, empty Ktor "hello world" route).
+- [x] Set up Git repo, initial commit.
 
 ## Phase 1 — Shared Models (Day 1–2)
 - [ ] Define `Application`, `Note`, `Status`, `Source` in `shared`, with `kotlinx.serialization`.
