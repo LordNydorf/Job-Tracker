@@ -71,6 +71,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rohit.jobtracker.android.ui.components.PipelineDashboardCard
 import com.rohit.jobtracker.android.ui.components.StatusBadge
@@ -89,6 +91,10 @@ fun ApplicationListScreen(
     viewModel: ApplicationListViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.loadApplications()
+    }
     var showSortMenu by remember { mutableStateOf(false) }
     var showServerDialog by remember { mutableStateOf(false) }
     var serverUrlInput by remember { mutableStateOf("") }

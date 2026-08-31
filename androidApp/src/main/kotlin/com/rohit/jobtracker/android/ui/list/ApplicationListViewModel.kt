@@ -58,7 +58,9 @@ class ApplicationListViewModel(
 
     fun loadApplications() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            if (_uiState.value.applications.isEmpty()) {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            }
             try {
                 val list = api.getApplications()
                 _uiState.update { state ->
@@ -74,7 +76,7 @@ class ApplicationListViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = e.message ?: "Unable to connect to backend server."
+                        errorMessage = if (it.applications.isEmpty()) e.message ?: "Unable to connect to backend server." else null
                     )
                 }
             }
