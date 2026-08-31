@@ -218,7 +218,7 @@ fun ApplicationDetailScreen(
                     color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 4.dp,
                     shadowElevation = 8.dp,
-                    modifier = Modifier.imePadding().navigationBarsPadding()
+                    modifier = Modifier.navigationBarsPadding()
                 ) {
                     Row(
                         modifier = Modifier
