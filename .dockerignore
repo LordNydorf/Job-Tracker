@@ -1,0 +1,15 @@
+.git
+.gitignore
+.gradle
+.idea
+.agents
+.gemini
+androidApp
+build
+*/build
+*.apk
+*.aab
+*.hprof
+local.properties
+*.log
+docs

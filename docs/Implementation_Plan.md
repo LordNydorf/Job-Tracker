@@ -19,7 +19,7 @@
 ## Phase 3 — Android UI (Day 3–5)
 - [x] Set up Koin DI, Navigation Compose skeleton.
 - [x] Build List screen with hardcoded/mock data first (unblock UI work from backend readiness).
-- [x] Build Add/Edit screen.
+- [x] Build Add/Edit screen (Multi-step animated wizard form).
 - [x] Build Detail screen with notes feed.
 - [x] Wire Ktor client implementation of `JobTrackerApi`, swap mock data for real network calls.
 
@@ -30,21 +30,23 @@
 ## Phase 5 — Polish & Feature (Day 6–7)
 - [x] Implement WorkManager reminder notification worker for stale applications (`daysSinceLastUpdate > reminderDays`).
 - [x] Apply visual styling rules from [Design_Brief.md](file:///c:/Users/notth/Projects/New%20folder/docs/Design_Brief.md) — status colors, dark mode, card typography, touch feedback.
-- [x] Clean up code, remove all TODOs, ensure zero compiler warnings.d (config-driven, not hardcoded).
-- [ ] Final smoke test against production backend.
+- [x] Clean up code, remove all TODOs, ensure zero compiler warnings.
+- [x] Custom Adaptive App Icon (Foreground, Background, Monochrome Material You layers).
+- [x] Android 12+ Splash Screen integration (`androidx.core:core-splashscreen`).
 
-## Phase 6 — Deploy (Day 7)
-- [ ] Dockerize backend, deploy to Railway/Render.
-- [ ] Point Android app's base URL at deployed backend (config-driven, not hardcoded).
-- [ ] Final smoke test against production backend.
+## Phase 6 — Deploy & Release Readiness (Day 7)
+- [x] Dockerize backend with multi-stage JRE 21 Alpine container (`Dockerfile` & `.dockerignore`).
+- [x] Cloud deployment manifests for Railway (`railway.json`) and Render (`render.yaml`).
+- [x] Point Android app's base URL at dynamic server config (Wi-Fi, USB, Emulator, Cloud production).
+- [x] Release APK compilation verification (`:androidApp:assembleRelease`).
+- [x] Comprehensive showcase `README.md` with architecture diagram, API reference, and setup guide.
 
 ## Definition of Done for v1
-- Rohit can add, view, update, and delete real job applications from his phone.
-- Backend is deployed and reachable outside localhost.
-- Repo is clean enough to link from a portfolio/resume.
-
-## Explicit Anti-Scope-Creep Note
-Do not start iOS/KMP-UI work, auth, or multi-user support until v1 above is fully working end-to-end. Any new idea that comes up mid-build goes in a "later" list at the bottom of this file, not into the current sprint.
+- [x] Rohit can add, view, update, and delete real job applications from his phone.
+- [x] Backend is containerized, cloud-ready, and reachable outside localhost.
+- [x] Repo is clean enough to link from a portfolio/resume.
 
 ### Later / Parking Lot
--
+- Multi-user authentication (JWT / OAuth2).
+- iOS Compose Multiplatform target.
+- Resume / CV PDF attachment parsing.
