@@ -35,6 +35,7 @@ import com.rohit.jobtracker.android.ui.list.formatRelativeTime
 import com.rohit.jobtracker.android.ui.theme.getCompanyAvatarBrush
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Status
+import androidx.compose.foundation.BorderStroke
 import kotlinx.datetime.Clock
 
 @Composable
@@ -57,10 +58,17 @@ fun ApplicationCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = shape,
+        border = BorderStroke(
+            1.dp,
+            if (isDark) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant
+        ),
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDark) 0.dp else 2.dp,
+            pressedElevation = 4.dp
+        )
     ) {
         Column(
             modifier = Modifier

@@ -20,7 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.rohit.jobtracker.android.ui.theme.StatusGhostedBorder
+import com.rohit.jobtracker.android.ui.theme.borderColor
 import com.rohit.jobtracker.android.ui.theme.backgroundColor
 import com.rohit.jobtracker.android.ui.theme.textColor
 import com.rohit.jobtracker.shared.model.Status
@@ -33,21 +33,15 @@ fun StatusBadge(
 ) {
     val isDark = isSystemInDarkTheme()
     val shape = RoundedCornerShape(10.dp)
-    val isGhosted = status == Status.GHOSTED
     val txtColor = status.textColor(isDark)
     val bgColor = status.backgroundColor(isDark)
+    val strokeColor = status.borderColor(isDark)
 
     Box(
         modifier = modifier
             .clip(shape)
             .background(bgColor)
-            .then(
-                if (isGhosted) {
-                    Modifier.border(BorderStroke(1.dp, StatusGhostedBorder.copy(alpha = 0.6f)), shape)
-                } else {
-                    Modifier
-                }
-            )
+            .border(BorderStroke(1.dp, strokeColor), shape)
             .padding(horizontal = 10.dp, vertical = 5.dp)
     ) {
         Row(

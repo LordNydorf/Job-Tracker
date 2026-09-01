@@ -51,12 +51,12 @@
 - Light mode visual revamp: the existing light theme variant needs its own design pass (colors/contrast), separate from the dark-mode-first design work already done.
 
 ## Phase 1 (v2) — Offline Write Queue & Background Sync Engine
-- [ ] **Client-Side UUIDs**: Support client-generated UUID identifiers on application and note creation across `:shared`, `:androidApp`, and `:backend` to enable instantaneous offline insertion without waiting for server ID generation.
-- [ ] **Pending Mutations Queue**: Implement a persistent mutation queue in `LocalApplicationStore` (`PendingMutation`: `CREATE_APP`, `UPDATE_APP`, `DELETE_APP`, `ADD_NOTE`, `DELETE_NOTE`).
-- [ ] **Optimistic StateFlow Updates**: ViewModels update local cache immediately so all user interactions (adds, status drags/taps, note logging, deletions) reflect with 0ms latency.
-- [ ] **WorkManager Background Sync**: Create `SyncWorker` with network constraints (`NetworkType.CONNECTED`), retry exponential backoff, and periodic/one-time background dispatch to survive app kills and cold starts.
-- [ ] **Sync Status UI Indicator**: Add a subtle cloud sync status icon in TopAppBar / Detail headers (`Synced`, `Syncing...`, `Offline - X changes queued`).
-- [ ] **Unit Tests**: Add offline queue serialization, retry handling, and conflict reconciliation tests in `:androidApp:testDebugUnitTest`.
+- [x] **Client-Side UUIDs**: Support client-generated UUID identifiers on application and note creation across `:shared`, `:androidApp`, and `:backend` to enable instantaneous offline insertion without waiting for server ID generation.
+- [x] **Pending Mutations Queue**: Implement a persistent mutation queue in `LocalApplicationStore` (`PendingMutation`: `CREATE_APP`, `UPDATE_APP`, `DELETE_APP`, `ADD_NOTE`, `DELETE_NOTE`).
+- [x] **Optimistic StateFlow Updates**: ViewModels update local cache immediately so all user interactions (adds, status drags/taps, note logging, deletions) reflect with 0ms latency.
+- [x] **WorkManager Background Sync**: Create `SyncWorker` with network constraints (`NetworkType.CONNECTED`), retry exponential backoff, and periodic/one-time background dispatch to survive app kills and cold starts.
+- [x] **Sync Status UI Indicator**: Add a subtle cloud sync status icon in TopAppBar / Detail headers (`Synced`, `Syncing...`, `Offline - X changes queued`).
+- [x] **Unit Tests**: Add offline queue serialization, retry handling, and conflict reconciliation tests in `:androidApp:testDebugUnitTest`.
 
 ## Phase 2 (v2) — Light Mode Visual Revamp & Accessibility
 - [ ] **Light Palette Tokens**: Redesign light theme tokens in `Color.kt` and `Theme.kt` with curated surface tones, distinct card elevations, and crisp boundary borders (`#E2E8F0` / `#CBD5E1`).

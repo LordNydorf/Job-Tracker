@@ -32,6 +32,9 @@ import com.rohit.jobtracker.android.ui.list.StatusFilter
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Status
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+
 @Composable
 fun PipelineDashboardCard(
     applications: List<Application>,
@@ -48,10 +51,17 @@ fun PipelineDashboardCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(
+            1.dp,
+            if (isDark) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant
+        ),
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDark) 0.dp else 2.dp,
+            pressedElevation = 4.dp
+        )
     ) {
         Column(
             modifier = Modifier
@@ -85,7 +95,7 @@ fun PipelineDashboardCard(
                 PipelineStageItem(
                     count = appliedCount,
                     label = "Applied",
-                    color = Color(0xFF38BDF8),
+                    color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onFilterSelected(StatusFilter.APPLIED)
@@ -95,7 +105,7 @@ fun PipelineDashboardCard(
                 PipelineStageItem(
                     count = screeningCount,
                     label = "Screening",
-                    color = Color(0xFFF59E0B),
+                    color = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706),
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onFilterSelected(StatusFilter.SCREENING)
@@ -105,7 +115,7 @@ fun PipelineDashboardCard(
                 PipelineStageItem(
                     count = interviewCount,
                     label = "Interview",
-                    color = Color(0xFFA855F7),
+                    color = if (isDark) Color(0xFF818CF8) else Color(0xFF4F46E5),
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onFilterSelected(StatusFilter.INTERVIEW)
@@ -115,7 +125,7 @@ fun PipelineDashboardCard(
                 PipelineStageItem(
                     count = offerCount,
                     label = "Offers",
-                    color = Color(0xFF10B981),
+                    color = if (isDark) Color(0xFF34D399) else Color(0xFF059669),
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onFilterSelected(StatusFilter.OFFER)
@@ -137,11 +147,14 @@ fun PipelineStageItem(
 ) {
     val isDark = isSystemInDarkTheme()
     val shape = RoundedCornerShape(16.dp)
+    val itemBg = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f) else color.copy(alpha = 0.08f)
+    val itemStroke = if (isDark) Color.Transparent else color.copy(alpha = 0.25f)
 
     Box(
         modifier = modifier
             .clip(shape)
-            .background(if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+            .background(itemBg)
+            .border(BorderStroke(1.dp, itemStroke), shape)
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center

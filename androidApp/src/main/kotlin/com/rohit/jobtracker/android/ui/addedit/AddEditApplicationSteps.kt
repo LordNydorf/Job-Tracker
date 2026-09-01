@@ -47,9 +47,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import com.rohit.jobtracker.android.ui.theme.backgroundColor
+import com.rohit.jobtracker.android.ui.theme.borderColor
 import com.rohit.jobtracker.android.ui.theme.textColor
 import com.rohit.jobtracker.shared.model.Source
 import com.rohit.jobtracker.shared.model.Status
@@ -68,6 +71,8 @@ fun ApplicationStepOne(
     onSalaryChange: (String) -> Unit,
     onCurrencyChange: (String) -> Unit
 ) {
+    val isDark = isSystemInDarkTheme()
+
     Text(
         text = "What job are you applying to?",
         style = MaterialTheme.typography.headlineSmall,
@@ -203,7 +208,12 @@ fun ApplicationStepOne(
                     },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
                     ),
                     shape = RoundedCornerShape(10.dp)
                 )
@@ -296,7 +306,12 @@ fun ApplicationStepTwo(
                 },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
                 ),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -319,6 +334,9 @@ fun ApplicationStepTwo(
     ) {
         Status.entries.forEach { st ->
             val isSelected = selectedStatus == st
+            val targetTextColor = if (isSelected) st.textColor(isDark) else MaterialTheme.colorScheme.onSurfaceVariant
+            val targetBgColor = if (isSelected) st.backgroundColor(isDark) else if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
+
             FilterChip(
                 selected = isSelected,
                 onClick = { onStatusChange(st) },
@@ -334,10 +352,20 @@ fun ApplicationStepTwo(
                             Icons.Default.Check,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
-                            tint = st.textColor(isDark)
+                            tint = targetTextColor
                         )
                     }
                 } else null,
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = targetBgColor,
+                    labelColor = targetTextColor,
+                    selectedContainerColor = targetBgColor,
+                    selectedLabelColor = targetTextColor
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    if (isSelected) st.borderColor(isDark) else MaterialTheme.colorScheme.outlineVariant
+                ),
                 shape = RoundedCornerShape(12.dp)
             )
         }
@@ -437,8 +465,7 @@ fun ApplicationStepThree(
                 .fillMaxWidth()
                 .clip(dateShape)
                 .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     shape = dateShape
                 )
                 .background(if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface)
@@ -450,13 +477,15 @@ fun ApplicationStepThree(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     Icon(
-                        imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = "Select Date",
+                        Icons.Default.CalendarMonth,
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = formattedDate,
                         style = MaterialTheme.typography.bodyLarge,
@@ -464,9 +493,10 @@ fun ApplicationStepThree(
                     )
                 }
                 Text(
-                    text = "Tap to change",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    text = "Change",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -540,7 +570,12 @@ fun ApplicationStepThree(
                     },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
                     ),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -549,19 +584,21 @@ fun ApplicationStepThree(
             // Custom Option Chip
             FilterChip(
                 selected = isCustomSelected,
-                onClick = {
-                    customInputText = if (isCustomSelected) reminderDays.toString() else ""
-                    showCustomDialog = true
-                },
+                onClick = { showCustomDialog = true },
                 label = {
                     Text(
-                        text = if (isCustomSelected) "$reminderDays Days (Custom)" else "Custom...",
+                        text = if (isCustomSelected) "${reminderDays}d (Custom)" else "Custom...",
                         fontWeight = if (isCustomSelected) FontWeight.Bold else FontWeight.Medium
                     )
                 },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    if (isCustomSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
                 ),
                 shape = RoundedCornerShape(12.dp)
             )

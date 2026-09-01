@@ -33,18 +33,18 @@ private val LightColorScheme = lightColorScheme(
     primary = BrandPrimary,
     onPrimary = Color.White,
     primaryContainer = BrandPrimaryContainer,
-    onPrimaryContainer = Color(0xFF1E3A8A),
+    onPrimaryContainer = Color(0xFF1E40AF), // Cobalt 800 for high text contrast
     secondary = Color(0xFF0284C7),
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFE0F2FE),
-    onSecondaryContainer = Color(0xFF075985),
-    background = Color(0xFFF8FAFC), // Pure Soft Off-White
-    surface = Color.White,
-    surfaceVariant = Color(0xFFF1F5F9),
-    onSurface = Color(0xFF0F172A),
-    onSurfaceVariant = Color(0xFF475569),
-    outline = Color(0xFFCBD5E1),
-    outlineVariant = Color(0xFFE2E8F0)
+    onSecondaryContainer = Color(0xFF0369A1), // Sky 700
+    background = Color(0xFFF8FAFC), // Crisp Soft Slate 50 canvas
+    surface = Color(0xFFFFFFFF),    // Pure White Card Canvas
+    surfaceVariant = Color(0xFFF1F5F9), // Slate 100
+    onSurface = Color(0xFF0F172A),  // Slate 900 (ultra-crisp headings & titles)
+    onSurfaceVariant = Color(0xFF475569), // Slate 600 (readable body & secondary labels)
+    outline = Color(0xFF94A3B8),    // Slate 400
+    outlineVariant = Color(0xFFE2E8F0) // Slate 200 (crisp 1dp card borders)
 )
 
 @Composable

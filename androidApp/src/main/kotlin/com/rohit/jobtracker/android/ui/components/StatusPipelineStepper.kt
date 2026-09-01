@@ -26,7 +26,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.rohit.jobtracker.android.ui.theme.StatusGhostedBorder
+import com.rohit.jobtracker.android.ui.theme.borderColor
 import com.rohit.jobtracker.android.ui.theme.backgroundColor
 import com.rohit.jobtracker.android.ui.theme.textColor
 import com.rohit.jobtracker.shared.model.Status
@@ -52,7 +52,7 @@ fun StatusPipelineStepper(
         Status.entries.forEach { status ->
             val isSelected = status == currentStatus
             val targetTextColor = if (isSelected) status.textColor(isDark) else MaterialTheme.colorScheme.onSurfaceVariant
-            val targetBgColor = if (isSelected) status.backgroundColor(isDark) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            val targetBgColor = if (isSelected) status.backgroundColor(isDark) else if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
 
             val animatedTextColor by animateColorAsState(targetTextColor, tween(200), label = "textColor")
             val animatedBgColor by animateColorAsState(targetBgColor, tween(200), label = "bgColor")
@@ -88,12 +88,10 @@ fun StatusPipelineStepper(
                     selectedContainerColor = animatedBgColor,
                     selectedLabelColor = animatedTextColor
                 ),
-                border = if (isSelected && status == Status.GHOSTED) {
-                    BorderStroke(1.5.dp, StatusGhostedBorder)
-                } else if (isSelected) {
-                    BorderStroke(1.dp, animatedTextColor.copy(alpha = 0.4f))
+                border = if (isSelected) {
+                    BorderStroke(1.dp, status.borderColor(isDark))
                 } else {
-                    BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 },
                 shape = RoundedCornerShape(14.dp)
             )

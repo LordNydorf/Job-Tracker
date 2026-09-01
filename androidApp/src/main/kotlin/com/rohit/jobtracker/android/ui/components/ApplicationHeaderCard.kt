@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.sp
 import com.rohit.jobtracker.android.ui.theme.getCompanyAvatarBrush
 import com.rohit.jobtracker.shared.model.Application
 
+import androidx.compose.foundation.BorderStroke
+
 @Composable
 fun ApplicationHeaderCard(
     application: Application,
@@ -51,6 +53,10 @@ fun ApplicationHeaderCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = shape,
+        border = BorderStroke(
+            1.dp,
+            if (isDark) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant
+        ),
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
         ),
