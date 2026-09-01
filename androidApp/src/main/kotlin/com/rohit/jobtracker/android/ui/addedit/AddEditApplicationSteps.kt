@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Work
@@ -90,11 +91,29 @@ fun ApplicationStepOne(
             Icon(
                 Icons.Default.Business,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                tint = if (companyError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
             )
         },
+        trailingIcon = {
+            if (companyError != null) {
+                Icon(
+                    imageVector = Icons.Default.ErrorOutline,
+                    contentDescription = "Error",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        },
         isError = companyError != null,
-        supportingText = companyError?.let { { Text(it) } },
+        supportingText = companyError?.let { errorText ->
+            {
+                Text(
+                    text = errorText,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -110,11 +129,29 @@ fun ApplicationStepOne(
             Icon(
                 Icons.Default.Work,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                tint = if (roleError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
             )
         },
+        trailingIcon = {
+            if (roleError != null) {
+                Icon(
+                    imageVector = Icons.Default.ErrorOutline,
+                    contentDescription = "Error",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        },
         isError = roleError != null,
-        supportingText = roleError?.let { { Text(it) } },
+        supportingText = roleError?.let { errorText ->
+            {
+                Text(
+                    text = errorText,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),

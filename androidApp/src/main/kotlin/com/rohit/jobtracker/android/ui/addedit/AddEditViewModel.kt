@@ -178,21 +178,30 @@ class AddEditViewModel(
         _uiState.update { it.copy(currency = value) }
     }
 
-    fun saveApplication(): Boolean {
+    fun validateStep(step: Int): Boolean {
         val state = _uiState.value
-        var hasError = false
+        var isValid = true
 
-        if (state.company.isBlank()) {
-            _uiState.update { it.copy(companyError = "Company name is required") }
-            hasError = true
+        if (step == 1) {
+            val companyErr = if (state.company.isBlank()) "Company name is required" else null
+            val roleErr = if (state.role.isBlank()) "Job role / title is required" else null
+
+            _uiState.update {
+                it.copy(
+                    companyError = companyErr,
+                    roleError = roleErr
+                )
+            }
+            isValid = companyErr == null && roleErr == null
         }
 
-        if (state.role.isBlank()) {
-            _uiState.update { it.copy(roleError = "Role is required") }
-            hasError = true
-        }
+        return isValid
+    }
 
-        if (hasError) return false
+    fun saveApplication(): Boolean {
+        if (!validateStep(1)) return false
+
+        val state = _uiState.value
 
         val formattedSalary = if (state.salary.isNotBlank()) {
             val sal = state.salary.trim()

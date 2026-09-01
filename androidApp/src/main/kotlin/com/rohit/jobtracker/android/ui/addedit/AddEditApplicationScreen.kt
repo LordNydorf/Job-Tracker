@@ -226,14 +226,9 @@ fun AddEditApplicationScreen(
                         if (currentStep < totalSteps) {
                             Button(
                                 onClick = {
-                                    if (currentStep == 1) {
-                                        if (uiState.company.isBlank() || uiState.role.isBlank()) {
-                                            if (uiState.company.isBlank()) viewModel.updateCompany("")
-                                            if (uiState.role.isBlank()) viewModel.updateRole("")
-                                            return@Button
-                                        }
+                                    if (viewModel.validateStep(currentStep)) {
+                                        currentStep += 1
                                     }
-                                    currentStep += 1
                                 },
                                 modifier = Modifier
                                     .weight(if (currentStep > 1) 1.8f else 1f)

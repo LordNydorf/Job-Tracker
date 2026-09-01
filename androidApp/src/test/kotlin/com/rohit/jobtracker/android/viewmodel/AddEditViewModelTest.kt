@@ -52,6 +52,32 @@ class AddEditViewModelTest {
     }
 
     @Test
+    fun testValidateStepReturnsFalseAndSetsErrorsWhenFieldsBlank() = runTest(testDispatcher) {
+        val api = FakeJobTrackerApi()
+        val viewModel = AddEditViewModel(api = api)
+
+        // Step 1 validation
+        val isValid = viewModel.validateStep(1)
+        assertFalse(isValid)
+        assertEquals("Company name is required", viewModel.uiState.value.companyError)
+        assertEquals("Job role / title is required", viewModel.uiState.value.roleError)
+
+        // Fill company only
+        viewModel.updateCompany("Linear")
+        val isValid2 = viewModel.validateStep(1)
+        assertFalse(isValid2)
+        assertNull(viewModel.uiState.value.companyError)
+        assertEquals("Job role / title is required", viewModel.uiState.value.roleError)
+
+        // Fill role as well
+        viewModel.updateRole("Product Engineer")
+        val isValid3 = viewModel.validateStep(1)
+        assertTrue(isValid3)
+        assertNull(viewModel.uiState.value.companyError)
+        assertNull(viewModel.uiState.value.roleError)
+    }
+
+    @Test
     fun testSuccessfulSaveWithCurrencyAndSalary() = runTest(testDispatcher) {
         val api = FakeJobTrackerApi()
         val viewModel = AddEditViewModel(api = api)
