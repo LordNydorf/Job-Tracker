@@ -2,6 +2,7 @@ package com.rohit.jobtracker.android.ui.addedit
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rohit.jobtracker.android.cache.LocalApplicationStore
 import com.rohit.jobtracker.shared.api.JobTrackerApi
 import com.rohit.jobtracker.shared.model.CreateApplicationRequest
 import com.rohit.jobtracker.shared.model.Source
@@ -40,7 +41,8 @@ data class AddEditUiState(
 
 class AddEditViewModel(
     private val applicationId: String? = null,
-    private val api: JobTrackerApi
+    private val api: JobTrackerApi,
+    private val localStore: LocalApplicationStore? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -53,6 +55,24 @@ class AddEditViewModel(
 
     init {
         if (!applicationId.isNullOrBlank()) {
+            val cached = localStore?.getCachedApplication(applicationId)
+            if (cached != null) {
+                val (cur, sal) = parseCurrencyAndSalary(cached.salary)
+                _uiState.update {
+                    it.copy(
+                        isEditMode = true,
+                        company = cached.company,
+                        role = cached.role,
+                        source = cached.source,
+                        dateApplied = cached.dateApplied,
+                        jobLink = cached.jobLink ?: "",
+                        status = cached.status,
+                        reminderDays = cached.reminderDays,
+                        currency = cur,
+                        salary = sal
+                    )
+                }
+            }
             loadExistingApplication(applicationId)
         }
     }
@@ -174,7 +194,7 @@ class AddEditViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, generalError = null) }
             try {
-                if (state.isEditMode && !applicationId.isNullOrBlank()) {
+                val saved = if (state.isEditMode && !applicationId.isNullOrBlank()) {
                     val updateReq = UpdateApplicationRequest(
                         company = state.company.trim(),
                         role = state.role.trim(),
@@ -199,6 +219,7 @@ class AddEditViewModel(
                     )
                     api.createApplication(createReq)
                 }
+                localStore?.saveOrUpdateApplication(saved)
                 _uiState.update { it.copy(isSaving = false) }
                 _saveSuccessEvent.emit(Unit)
             } catch (e: Exception) {

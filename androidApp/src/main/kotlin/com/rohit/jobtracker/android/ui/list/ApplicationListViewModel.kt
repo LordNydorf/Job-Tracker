@@ -2,6 +2,7 @@ package com.rohit.jobtracker.android.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rohit.jobtracker.android.cache.LocalApplicationStore
 import com.rohit.jobtracker.android.network.ServerConfig
 import com.rohit.jobtracker.shared.api.JobTrackerApi
 import com.rohit.jobtracker.shared.model.Application
@@ -42,12 +43,17 @@ data class ApplicationListUiState(
 
 class ApplicationListViewModel(
     private val api: JobTrackerApi,
+    private val localStore: LocalApplicationStore? = null,
     private val serverConfig: ServerConfig? = null
 ) : ViewModel() {
 
+    private val cached = localStore?.getCachedApplications() ?: emptyList()
+
     private val _uiState = MutableStateFlow(
         ApplicationListUiState(
-            isLoading = true,
+            isLoading = cached.isEmpty(),
+            applications = cached,
+            filteredApplications = applyFilterAndSort(cached, StatusFilter.ALL, SortOption.LAST_UPDATED, ""),
             currentServerUrl = serverConfig?.getBaseUrl() ?: ServerConfig.PRESETS.first().url,
             currentApiKey = serverConfig?.getApiKey() ?: ""
         )
@@ -65,6 +71,7 @@ class ApplicationListViewModel(
             }
             try {
                 val list = api.getApplications()
+                localStore?.saveApplications(list)
                 _uiState.update { state ->
                     val filtered = applyFilterAndSort(list, state.statusFilter, state.sortOption, state.searchQuery)
                     state.copy(
@@ -125,6 +132,7 @@ class ApplicationListViewModel(
         val updatedList = currentApps.toMutableList()
         val updatedApp = updatedList[targetIndex].copy(status = newStatus)
         updatedList[targetIndex] = updatedApp
+        localStore?.saveOrUpdateApplication(updatedApp)
 
         _uiState.update { state ->
             val filtered = applyFilterAndSort(updatedList, state.statusFilter, state.sortOption, state.searchQuery)

@@ -141,6 +141,25 @@ adb reverse tcp:8080 tcp:8080
 
 ---
 
+## ☁️ Free Cloud Deployment (Render + Neon PostgreSQL)
+
+The backend is configured with **Dual-Engine Persistence** (Cloud PostgreSQL + SQLite) and the Android app features **0ms Offline-First Caching**:
+
+1. **Create Free Database (100% Free Forever)**:
+   - Create a free project at [neon.tech](https://neon.tech) (0.5 GiB serverless Postgres, never deleted).
+   - Copy your PostgreSQL connection string (`postgresql://user:pass@ep-xyz.neon.tech/neondb?sslmode=require`).
+2. **Deploy on Render**:
+   - Create a **Web Service** on [render.com](https://render.com) using this repo.
+   - In **Environment Variables**, set:
+     - `DATABASE_URL` = `postgresql://...` (your Neon connection string)
+     - `API_KEY` = `your-secret-api-key`
+3. **Configure Android App**:
+   - In the Android app, tap the **Cloud (Server Config)** icon in the top-right corner.
+   - Enter your Render server URL (`https://your-service.onrender.com`) and your API Key.
+   - Even during cold starts on Render's free tier, the Android app will load instantly (0ms latency) from on-device local storage!
+
+---
+
 ## 🧪 Testing
 
 ```bash

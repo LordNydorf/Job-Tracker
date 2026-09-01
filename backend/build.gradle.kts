@@ -33,6 +33,8 @@ dependencies {
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.kotlin.datetime)
     implementation(libs.sqlite.jdbc)
+    implementation(libs.postgresql)
+    implementation(libs.hikari)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.client.content.negotiation)

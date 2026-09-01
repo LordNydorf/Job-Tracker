@@ -1,5 +1,6 @@
 package com.rohit.jobtracker.android.di
 
+import com.rohit.jobtracker.android.cache.LocalApplicationStore
 import com.rohit.jobtracker.android.network.KtorJobTrackerApi
 import com.rohit.jobtracker.android.network.ServerConfig
 import com.rohit.jobtracker.android.ui.addedit.AddEditViewModel
@@ -19,6 +20,10 @@ import org.koin.dsl.module
 val appModule = module {
     single {
         ServerConfig(context = androidContext())
+    }
+
+    single {
+        LocalApplicationStore(context = androidContext())
     }
 
     single {
@@ -47,7 +52,7 @@ val appModule = module {
         )
     }
 
-    viewModel { ApplicationListViewModel(api = get(), serverConfig = get()) }
-    viewModel { (applicationId: String?) -> AddEditViewModel(applicationId = applicationId, api = get()) }
-    viewModel { (applicationId: String) -> ApplicationDetailViewModel(applicationId = applicationId, api = get(), serverConfig = get()) }
+    viewModel { ApplicationListViewModel(api = get(), localStore = get(), serverConfig = get()) }
+    viewModel { (applicationId: String?) -> AddEditViewModel(applicationId = applicationId, api = get(), localStore = get()) }
+    viewModel { (applicationId: String) -> ApplicationDetailViewModel(applicationId = applicationId, api = get(), localStore = get(), serverConfig = get()) }
 }

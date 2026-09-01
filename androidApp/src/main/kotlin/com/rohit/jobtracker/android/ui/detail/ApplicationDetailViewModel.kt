@@ -2,6 +2,7 @@ package com.rohit.jobtracker.android.ui.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rohit.jobtracker.android.cache.LocalApplicationStore
 import com.rohit.jobtracker.android.network.ServerConfig
 import com.rohit.jobtracker.shared.api.JobTrackerApi
 import com.rohit.jobtracker.shared.model.Application
@@ -34,11 +35,18 @@ data class ApplicationDetailUiState(
 class ApplicationDetailViewModel(
     private val applicationId: String,
     private val api: JobTrackerApi,
+    private val localStore: LocalApplicationStore? = null,
     private val serverConfig: ServerConfig? = null
 ) : ViewModel() {
 
+    private val cachedApp = localStore?.getCachedApplication(applicationId)
+    private val cachedNotes = localStore?.getCachedNotes(applicationId) ?: emptyList()
+
     private val _uiState = MutableStateFlow(
         ApplicationDetailUiState(
+            isLoading = cachedApp == null,
+            application = cachedApp,
+            notes = cachedNotes,
             currentServerUrl = serverConfig?.getBaseUrl() ?: ServerConfig.PRESETS.first().url,
             currentApiKey = serverConfig?.getApiKey() ?: ""
         )
@@ -65,10 +73,16 @@ class ApplicationDetailViewModel(
 
     fun loadData() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            if (_uiState.value.application == null) {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            }
             try {
                 val app = api.getApplication(applicationId)
                 val notes = api.getNotes(applicationId)
+                if (app != null) {
+                    localStore?.saveOrUpdateApplication(app)
+                    localStore?.saveNotes(applicationId, notes)
+                }
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -81,7 +95,7 @@ class ApplicationDetailViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = e.message ?: "Failed to load application details"
+                        errorMessage = if (it.application == null) e.message ?: "Failed to load application details" else null
                     )
                 }
             }
@@ -92,9 +106,12 @@ class ApplicationDetailViewModel(
         val currentApp = _uiState.value.application ?: return
         if (currentApp.status == newStatus) return
 
+        val updatedApp = currentApp.copy(status = newStatus)
+        localStore?.saveOrUpdateApplication(updatedApp)
+
         _uiState.update {
             it.copy(
-                application = currentApp.copy(status = newStatus),
+                application = updatedApp,
                 isUpdatingStatus = true
             )
         }
@@ -102,6 +119,7 @@ class ApplicationDetailViewModel(
         viewModelScope.launch {
             try {
                 val updated = api.updateApplication(applicationId, UpdateApplicationRequest(status = newStatus))
+                localStore?.saveOrUpdateApplication(updated)
                 _uiState.update { it.copy(application = updated, isUpdatingStatus = false) }
             } catch (e: Exception) {
                 _uiState.update {
@@ -127,6 +145,7 @@ class ApplicationDetailViewModel(
             _uiState.update { it.copy(isAddingNote = true) }
             try {
                 val newNote = api.addNote(applicationId, CreateNoteRequest(text = text))
+                localStore?.addCachedNote(applicationId, newNote)
                 _uiState.update {
                     it.copy(
                         isAddingNote = false,
@@ -151,6 +170,7 @@ class ApplicationDetailViewModel(
             try {
                 val success = api.deleteApplication(applicationId)
                 if (success) {
+                    localStore?.deleteCachedApplication(applicationId)
                     _deleteSuccessEvent.emit(Unit)
                 } else {
                     _uiState.update { it.copy(isDeleting = false, errorMessage = "Failed to delete application") }

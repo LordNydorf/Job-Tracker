@@ -9,6 +9,8 @@ services:
       - key: PORT
         value: 8080
       - key: DATABASE_URL
-        value: jdbc:sqlite:/data/jobtracker.db
+        sync: false
+        # Set to your Free Neon / Supabase Postgres URL (e.g. postgresql://user:pass@ep-xyz.neon.tech/neondb?sslmode=require)
+        # Defaults to local SQLite if unset.
       - key: API_KEY
         generateValue: true
