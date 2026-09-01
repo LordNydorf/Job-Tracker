@@ -377,6 +377,7 @@ fun ApplicationDetailScreen(
                                     onClick = {
                                         viewModel.updateNewNoteText(suggestion)
                                         viewModel.addNote()
+                                        Toast.makeText(context, "Added note: $suggestion", Toast.LENGTH_SHORT).show()
                                     },
                                     label = { Text("+ $suggestion", fontSize = 12.sp) },
                                     shape = RoundedCornerShape(12.dp)
