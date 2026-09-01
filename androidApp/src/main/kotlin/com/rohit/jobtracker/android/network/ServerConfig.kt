@@ -43,10 +43,10 @@ class ServerConfig(context: Context) {
 
     companion object {
         val PRESETS = listOf(
+            ServerPreset("Cloud (Render)", "https://job-tracker-backend-79sy.onrender.com"),
             ServerPreset("Wi-Fi IP", "http://192.168.0.164:8080"),
             ServerPreset("USB (127.0.0.1)", "http://127.0.0.1:8080"),
-            ServerPreset("Emulator", "http://10.0.2.2:8080"),
-            ServerPreset("Cloud (Railway)", "https://job-tracker-api.up.railway.app")
+            ServerPreset("Emulator", "http://10.0.2.2:8080")
         )
     }
 }
