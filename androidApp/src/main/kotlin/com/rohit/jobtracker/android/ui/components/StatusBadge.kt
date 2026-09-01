@@ -3,7 +3,6 @@ package com.rohit.jobtracker.android.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rohit.jobtracker.android.ui.theme.isAppInDarkTheme
 import com.rohit.jobtracker.android.ui.theme.borderColor
 import com.rohit.jobtracker.android.ui.theme.backgroundColor
 import com.rohit.jobtracker.android.ui.theme.textColor
@@ -31,7 +31,7 @@ fun StatusBadge(
     modifier: Modifier = Modifier,
     showDot: Boolean = true
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val shape = RoundedCornerShape(10.dp)
     val txtColor = status.textColor(isDark)
     val bgColor = status.backgroundColor(isDark)

@@ -3,7 +3,6 @@ package com.rohit.jobtracker.android.ui.addedit
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +50,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import com.rohit.jobtracker.android.ui.theme.isAppInDarkTheme
 import com.rohit.jobtracker.android.ui.theme.backgroundColor
 import com.rohit.jobtracker.android.ui.theme.borderColor
 import com.rohit.jobtracker.android.ui.theme.textColor
@@ -71,7 +71,7 @@ fun ApplicationStepOne(
     onSalaryChange: (String) -> Unit,
     onCurrencyChange: (String) -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
 
     Text(
         text = "What job are you applying to?",
@@ -265,7 +265,7 @@ fun ApplicationStepTwo(
     onSourceChange: (Source) -> Unit,
     onStatusChange: (Status) -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
 
     Text(
         text = "Source & Initial Stage",
@@ -382,7 +382,7 @@ fun ApplicationStepThree(
     onJobLinkChange: (String) -> Unit,
     onReminderDaysChange: (Int?) -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     var showCustomDialog by remember { mutableStateOf(false) }
     var customInputText by remember { mutableStateOf(reminderDays?.toString() ?: "") }
 

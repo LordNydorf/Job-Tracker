@@ -1,7 +1,6 @@
 package com.rohit.jobtracker.android.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rohit.jobtracker.android.ui.theme.isAppInDarkTheme
 import com.rohit.jobtracker.android.ui.theme.getCompanyAvatarBrush
 import com.rohit.jobtracker.shared.model.Application
 
@@ -45,7 +45,7 @@ fun ApplicationHeaderCard(
     onOpenLink: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val avatarBrush = getCompanyAvatarBrush(application.company)
     val initial = application.company.firstOrNull()?.uppercaseChar()?.toString() ?: "J"
     val shape = RoundedCornerShape(22.dp)
@@ -53,12 +53,9 @@ fun ApplicationHeaderCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = shape,
-        border = BorderStroke(
-            1.dp,
-            if (isDark) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant
-        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -107,7 +104,7 @@ fun ApplicationHeaderCard(
                 StatusBadge(status = application.status)
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
 
             // Metadata Row
             Row(
@@ -117,7 +114,8 @@ fun ApplicationHeaderCard(
             ) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
                     Text(
                         text = "Source: ${application.source.displayName}",
@@ -150,7 +148,8 @@ fun ApplicationHeaderCard(
             application.salary?.takeIf { it.isNotBlank() }?.let { sal ->
                 Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                 ) {
                     Row(
                         modifier = Modifier

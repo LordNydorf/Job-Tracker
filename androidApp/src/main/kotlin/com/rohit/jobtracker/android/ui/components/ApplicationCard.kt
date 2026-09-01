@@ -1,7 +1,6 @@
 package com.rohit.jobtracker.android.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,13 +37,15 @@ import com.rohit.jobtracker.shared.model.Status
 import androidx.compose.foundation.BorderStroke
 import kotlinx.datetime.Clock
 
+import com.rohit.jobtracker.android.ui.theme.isAppInDarkTheme
+
 @Composable
 fun ApplicationCard(
     application: Application,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val initial = application.company.firstOrNull()?.uppercaseChar()?.toString() ?: "J"
     val avatarBrush = getCompanyAvatarBrush(application.company)
 
@@ -58,12 +59,9 @@ fun ApplicationCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = shape,
-        border = BorderStroke(
-            1.dp,
-            if (isDark) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant
-        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = if (isDark) 0.dp else 2.dp,

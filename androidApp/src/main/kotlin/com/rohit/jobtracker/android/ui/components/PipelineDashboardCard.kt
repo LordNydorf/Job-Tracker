@@ -2,7 +2,6 @@ package com.rohit.jobtracker.android.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +31,7 @@ import com.rohit.jobtracker.android.ui.list.StatusFilter
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Status
 
+import com.rohit.jobtracker.android.ui.theme.isAppInDarkTheme
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 
@@ -41,7 +41,7 @@ fun PipelineDashboardCard(
     onFilterSelected: (StatusFilter) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val haptic = LocalHapticFeedback.current
     val appliedCount = applications.count { it.status == Status.APPLIED }
     val screeningCount = applications.count { it.status == Status.SCREENING }
@@ -51,12 +51,9 @@ fun PipelineDashboardCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(
-            1.dp,
-            if (isDark) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant
-        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = if (isDark) 0.dp else 2.dp,
@@ -145,7 +142,7 @@ fun PipelineStageItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val shape = RoundedCornerShape(16.dp)
     val itemBg = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f) else color.copy(alpha = 0.08f)
     val itemStroke = if (isDark) Color.Transparent else color.copy(alpha = 0.25f)

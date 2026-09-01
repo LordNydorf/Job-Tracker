@@ -7,7 +7,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -70,6 +69,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rohit.jobtracker.android.ui.components.ApplicationCard
 import com.rohit.jobtracker.android.ui.components.PipelineDashboardCard
 import com.rohit.jobtracker.android.ui.components.ServerConfigDialog
+import com.rohit.jobtracker.android.ui.theme.isAppInDarkTheme
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
@@ -82,7 +82,7 @@ fun ApplicationListScreen(
     viewModel: ApplicationListViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     var showServerDialog by remember { mutableStateOf(false) }
     var isSearchExpanded by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
