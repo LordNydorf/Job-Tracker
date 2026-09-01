@@ -37,11 +37,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.KeyboardType
 import com.rohit.jobtracker.android.ui.theme.textColor
 import com.rohit.jobtracker.shared.model.Source
 import com.rohit.jobtracker.shared.model.Status
-
-import androidx.compose.material.icons.filled.AttachMoney
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -294,6 +302,7 @@ fun ApplicationStepTwo(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ApplicationStepThree(
     formattedDate: String,
@@ -304,6 +313,58 @@ fun ApplicationStepThree(
     onReminderDaysChange: (Int?) -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
+    var showCustomDialog by remember { mutableStateOf(false) }
+    var customInputText by remember { mutableStateOf(reminderDays?.toString() ?: "") }
+
+    if (showCustomDialog) {
+        AlertDialog(
+            onDismissRequest = { showCustomDialog = false },
+            title = { Text("Custom Reminder Days") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Enter how many days after applying or updating you want a nudge to follow up:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = customInputText,
+                        onValueChange = { input ->
+                            if (input.all { it.isDigit() } && input.length <= 3) {
+                                customInputText = input
+                            }
+                        },
+                        label = { Text("Days") },
+                        placeholder = { Text("e.g. 5, 10, 21") },
+                        suffix = { Text("days") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val parsedDays = customInputText.toIntOrNull()
+                        if (parsedDays != null && parsedDays > 0) {
+                            onReminderDaysChange(parsedDays)
+                        }
+                        showCustomDialog = false
+                    },
+                    enabled = customInputText.toIntOrNull()?.let { it > 0 } == true
+                ) {
+                    Text("Set")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCustomDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Text(
         text = "Timeline & Follow-ups",
@@ -408,12 +469,16 @@ fun ApplicationStepThree(
             )
         }
 
-        Row(
+        val presets = listOf(3, 7, 14)
+        val isCustomSelected = reminderDays != null && reminderDays !in presets
+
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             val reminderOptions = listOf(
-                null to "No Reminder",
+                null to "None",
                 3 to "3 Days",
                 7 to "7 Days",
                 14 to "14 Days"
@@ -430,7 +495,6 @@ fun ApplicationStepThree(
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                         )
                     },
-                    modifier = Modifier.weight(1f),
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -438,6 +502,26 @@ fun ApplicationStepThree(
                     shape = RoundedCornerShape(12.dp)
                 )
             }
+
+            // Custom Option Chip
+            FilterChip(
+                selected = isCustomSelected,
+                onClick = {
+                    customInputText = if (isCustomSelected) reminderDays.toString() else ""
+                    showCustomDialog = true
+                },
+                label = {
+                    Text(
+                        text = if (isCustomSelected) "$reminderDays Days (Custom)" else "Custom...",
+                        fontWeight = if (isCustomSelected) FontWeight.Bold else FontWeight.Medium
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
         }
     }
 }
