@@ -6,11 +6,13 @@ A modern, production-grade **Kotlin Multiplatform (KMP)** application designed t
 
 ## 📱 Features
 
-- **Multi-Step Application Wizard**: Fast, structured 3-step logging process (`Role & Company` → `Source & Stage` → `Timeline & Nudges`) with a persistent sticky action bar and inline date picker.
-- **1-Tap Pipeline Progression**: Seamless status transitions (`Applied` ➔ `Screening` ➔ `Interview` ➔ `Offer` ➔ `Rejected` / `Ghosted`) with instant optimistic updates and server synchronization.
-- **Activity & Interview Log**: Real-time note recording for interview questions, feedback, and take-home tasks with 1-tap quick suggestions and edge-to-edge chat-style composer.
-- **Automated Follow-Up Nudges**: Background `WorkManager` worker that scans for stagnant applications and delivers notification alerts when follow-ups are due.
-- **Rich Material 3 Aesthetics**: Curated dark & light modes, dynamic company avatar gradients, adaptive launcher icons, and native Android 12+ Splash Screen.
+- **Interactive Pipeline Dashboard**: Real-time summary metric cards (`Applied`, `Screening`, `Interview`, `Offer`) with 1-tap list filtering and tactile haptic feedback.
+- **Multi-Step Application Wizard**: Fast, structured 3-step logging process (`Role & Company` → `Source & Stage` → `Timeline & Nudges`) with back-navigation unsaved changes guard, currency prefix selector, and inline date picker.
+- **1-Tap Pipeline Progression**: Seamless status transitions (`Applied` ➔ `Screening` ➔ `Interview` ➔ `Offer` ➔ `Rejected` / `Ghosted`) with haptic tactile response.
+- **Activity & Interview Log**: Real-time note recording for interview questions, feedback, and take-home tasks with 1-tap suggestions, toast feedback, and note deletion with confirmation dialog.
+- **Automated Follow-Up Nudges**: Background `WorkManager` worker that scans for stagnant applications and delivers notification alerts when follow-ups are due, paired with card-level overdue badges.
+- **Theme Mode Customization**: Toggle between `System Default`, `Light Mode`, and `Dark Mode` with persistent `ThemeConfig` and Deep Cobalt Tech Blue styling.
+- **0ms Offline-First Startup**: Instant offline reads from local JSON disk cache (`LocalApplicationStore`).
 - **Dynamic Server Switching**: In-app backend switcher with quick presets for Wi-Fi IP, USB reverse tethering, Android Emulator, and Cloud Production.
 
 ---
@@ -23,6 +25,7 @@ graph TD
         UI[Jetpack Compose Material 3]
         VM[Lifecycle ViewModels]
         DI[Koin Dependency Injection]
+        Store[LocalApplicationStore Cache]
         WM[WorkManager Reminder Worker]
         Client[Ktor HTTP Client + OkHttp]
     end
@@ -36,11 +39,12 @@ graph TD
     subgraph "Backend Service (:backend)"
         Server[Ktor 3.0 Server + Netty]
         Auth[API Key Authentication Plugin]
-        ORM[Exposed SQL ORM]
-        DB[(SQLite Database)]
+        ORM[Exposed SQL ORM + HikariCP]
+        DB[(Neon PostgreSQL / SQLite)]
     end
 
     UI --> VM
+    VM --> Store
     VM --> Client
     Client --> ApiInterface
     Client --> Models
@@ -53,10 +57,10 @@ graph TD
 ### Technology Highlights
 | Layer | Technologies |
 |---|---|
-| **Client** | Jetpack Compose, Material 3, Navigation Compose, Koin, AndroidX WorkManager, Core Splash Screen |
+| **Client** | Jetpack Compose, Material 3, Navigation Compose, Koin, AndroidX WorkManager, Core Splash Screen, `LocalApplicationStore` |
 | **Shared** | Kotlin Multiplatform (KMP), `kotlinx.serialization`, `kotlinx-datetime`, `kotlinx.coroutines` |
-| **Backend** | Ktor 3.0 Server, Netty Engine, Exposed SQL ORM, SQLite JDBC, Logback |
-| **Deployment** | Docker (Multi-stage JRE 21 Alpine), Railway, Render |
+| **Backend** | Ktor 3.0 Server, Netty Engine, Exposed SQL ORM, HikariCP, PostgreSQL (Neon) & SQLite (Local), Logback |
+| **Deployment** | Docker (Multi-stage JRE 21 Alpine), Render, Railway |
 
 ---
 
@@ -74,6 +78,7 @@ All protected endpoints require the `X-API-Key` header with your configured API 
 | `DELETE` | `/applications/{id}` | Delete application and cascade its notes |
 | `GET` | `/applications/{id}/notes` | Retrieve all notes/timeline events for an application |
 | `POST` | `/applications/{id}/notes` | Add a new note or interview log entry |
+| `DELETE` | `/applications/{id}/notes/{noteId}` | Delete a specific note/timeline item |
 
 ---
 

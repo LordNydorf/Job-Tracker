@@ -10,10 +10,11 @@
 | Android state | ViewModel + StateFlow | No LiveData |
 | Android DI | Koin | Lightweight vs Hilt |
 | Android networking | Ktor Client (OkHttp engine) | Implements shared `JobTrackerApi` |
-| Android background work | WorkManager | Local follow-up reminders |
+| Android caching | `LocalApplicationStore` (JSON cache) | Instant 0ms startup cache; v2 adds offline write queue |
+| Android background work | WorkManager | Local follow-up reminders; v2 adds offline sync worker |
 | Backend framework | Ktor Server (Netty) | REST |
-| Backend DB | SQLite via Exposed | Swap to Postgres only if needed later |
-| Deployment | Docker → Railway/Render | Free tier acceptable for v1 |
+| Backend DB | PostgreSQL (Neon) & SQLite (local fallback) via Exposed + HikariCP | Dual-engine persistence with HikariCP connection pooling |
+| Deployment | Docker → Render / Railway | Free tier with serverless PostgreSQL |
 
 ## 2. Data Model
 
@@ -28,6 +29,8 @@ data class Application(
     val source: Source,
     val dateApplied: LocalDate,
     val jobLink: String?,
+    val salary: String? = null,
+    val currency: String? = null,
     val status: Status,
     val lastUpdated: Instant,
     val reminderDays: Int?
@@ -50,16 +53,19 @@ data class Note(
 | GET | `/applications/{id}` | Get single application |
 | PATCH | `/applications/{id}` | Update fields (incl. status) |
 | DELETE | `/applications/{id}` | Delete application |
-| POST | `/applications/{id}/notes` | Add note |
 | GET | `/applications/{id}/notes` | List notes for an application |
+| POST | `/applications/{id}/notes` | Add note |
+| DELETE | `/applications/{id}/notes/{noteId}` | Delete note |
 
 All requests/responses: `application/json`, using shared `Application`/`Note` models.
 Auth: `X-API-Key` header, single static key for v1 (see `security_consideration.md`).
 
 ## 4. Non-Functional Requirements
-- **Performance**: trivial at single-user scale — no specific latency targets, just "feels instant" on a list of <200 applications.
-- **Availability**: best-effort. Free-tier hosting may cold-start/sleep; acceptable for v1, not a production SLA.
-- **Offline behavior**: v1 requires network to load/save. Local caching (Room) is a v1.1 stretch goal, not a hard requirement.
+- **Performance**: instant 0ms launch via `LocalApplicationStore` cache, seamless on a list of <500 applications.
+- **Availability**: best-effort with serverless Neon Postgres. Free-tier web service cold starts are masked on mobile by local caching.
+- **Offline behavior**: 
+  - *Current (v1.x)*: Instant offline reads via `LocalApplicationStore`; writes require connectivity.
+  - *Planned (v2)*: Offline write queue with client-generated UUIDs, optimistic updates, and background WorkManager synchronization.
 - **Minimum Android version**: API 26+ (covers virtually all real devices, keeps Compose/Koin compatibility simple).
 
 ## 5. Build & Environments
