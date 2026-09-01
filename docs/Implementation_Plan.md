@@ -59,11 +59,11 @@
 - [x] **Unit Tests**: Add offline queue serialization, retry handling, and conflict reconciliation tests in `:androidApp:testDebugUnitTest`.
 
 ## Phase 2 (v2) — Light Mode Visual Revamp & Accessibility
-- [ ] **Light Palette Tokens**: Redesign light theme tokens in `Color.kt` and `Theme.kt` with curated surface tones, distinct card elevations, and crisp boundary borders (`#E2E8F0` / `#CBD5E1`).
-- [ ] **WCAG AA/AAA Contrast Audit**: Ensure all text, secondary labels, and status badges meet $\ge 4.5:1$ contrast against pure white cards and soft slate backgrounds (`#F8FAFC`).
-- [ ] **Status Badge Refinement**: Tune light-mode status badge background/text pairings (`Applied`, `Screening`, `Interview`, `Offer`, `Rejected`, `Ghosted`) for maximum legibility and visual pop.
-- [ ] **Wizard & Detail Polish**: Refine multi-step wizard step indicators, text field outlines, and avatar gradient contrast in light appearance mode.
-- [ ] **Dynamic Theme Switching Verification**: Verify smooth visual transitions across Light, Dark, and System Default modes without layout jitter or unstyled frames.
+- [x] **Light Palette Tokens**: Redesign light theme tokens in `Color.kt` and `Theme.kt` with curated surface tones, distinct card elevations, and crisp boundary borders (`#E2E8F0` / `#CBD5E1`).
+- [x] **WCAG AA/AAA Contrast Audit**: Ensure all text, secondary labels, and status badges meet $\ge 4.5:1$ contrast against pure white cards and soft slate backgrounds (`#F8FAFC`).
+- [x] **Status Badge Refinement**: Tune light-mode status badge background/text pairings (`Applied`, `Screening`, `Interview`, `Offer`, `Rejected`, `Ghosted`) for maximum legibility and visual pop.
+- [x] **Wizard & Detail Polish**: Refine multi-step wizard step indicators, text field outlines, and avatar gradient contrast in light appearance mode.
+- [x] **Dynamic Theme Switching Verification**: Verify smooth visual transitions across Light, Dark, and System Default modes without layout jitter or unstyled frames.
 
 ### Later / Parking Lot
 - iOS app via Compose Multiplatform/SwiftUI — needs a Mac, real second UI layer, project-sized on its own
