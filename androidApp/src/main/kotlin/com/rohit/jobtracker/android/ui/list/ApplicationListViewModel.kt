@@ -216,11 +216,12 @@ class ApplicationListViewModel(
         sort: SortOption,
         query: String
     ): List<Application> {
+        val uniqueList = list.distinctBy { it.id }
         val queryFiltered = if (query.isBlank()) {
-            list
+            uniqueList
         } else {
             val q = query.trim().lowercase()
-            list.filter {
+            uniqueList.filter {
                 it.company.lowercase().contains(q) ||
                         it.role.lowercase().contains(q) ||
                         it.source.displayName.lowercase().contains(q)

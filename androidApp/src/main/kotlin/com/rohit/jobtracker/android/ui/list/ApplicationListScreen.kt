@@ -394,7 +394,7 @@ fun ApplicationListScreen(
                     ) {
                         // Dashboard Summary Card (Only on 'All' view with no active search)
                         if (uiState.statusFilter == StatusFilter.ALL && uiState.searchQuery.isBlank()) {
-                            item {
+                            item(key = "dashboard_summary_header") {
                                 PipelineDashboardCard(
                                     applications = uiState.applications,
                                     onFilterSelected = { filter -> viewModel.setFilter(filter) }
@@ -404,8 +404,8 @@ fun ApplicationListScreen(
                         }
 
                         items(
-                            items = uiState.filteredApplications,
-                            key = { it.id }
+                            items = uiState.filteredApplications.distinctBy { it.id },
+                            key = { "app_${it.id}" }
                         ) { application ->
                             ApplicationCard(
                                 application = application,

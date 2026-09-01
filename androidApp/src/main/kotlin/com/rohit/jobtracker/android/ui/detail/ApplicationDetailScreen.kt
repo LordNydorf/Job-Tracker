@@ -323,7 +323,7 @@ fun ApplicationDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // 1. Pipeline Stepper Section
-                    item {
+                    item(key = "stage_stepper") {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Pipeline Stage (1-Tap Progression)",
@@ -340,7 +340,7 @@ fun ApplicationDetailScreen(
                     }
 
                     // 2. Main Details Header Card
-                    item {
+                    item(key = "header_card") {
                         ApplicationHeaderCard(
                             application = app,
                             onOpenLink = { url ->
@@ -354,7 +354,7 @@ fun ApplicationDetailScreen(
                     }
 
                     // 3. Quick Note Suggestions
-                    item {
+                    item(key = "quick_updates") {
                         Text(
                             text = "Quick Updates",
                             style = MaterialTheme.typography.labelMedium,
@@ -389,7 +389,7 @@ fun ApplicationDetailScreen(
                     }
 
                     // 4. Notes & Timeline Header
-                    item {
+                    item(key = "notes_header") {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -419,7 +419,7 @@ fun ApplicationDetailScreen(
 
                     // 5. Notes Timeline List
                     if (uiState.notes.isEmpty()) {
-                        item {
+                        item(key = "empty_notes_indicator") {
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
@@ -435,8 +435,8 @@ fun ApplicationDetailScreen(
                         }
                     } else {
                         itemsIndexed(
-                            items = uiState.notes,
-                            key = { _, note -> note.id }
+                            items = uiState.notes.distinctBy { it.id },
+                            key = { _, note -> "note_${note.id}" }
                         ) { index, note ->
                             TimelineNoteItem(
                                 note = note,
@@ -446,7 +446,7 @@ fun ApplicationDetailScreen(
                         }
                     }
 
-                    item {
+                    item(key = "bottom_spacer") {
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }

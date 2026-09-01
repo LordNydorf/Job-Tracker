@@ -47,7 +47,7 @@ class LocalApplicationStore(private val filesDir: File) {
         if (!appsFile.exists()) return emptyList()
         return try {
             val raw = appsFile.readText()
-            json.decodeFromString<List<Application>>(raw)
+            json.decodeFromString<List<Application>>(raw).distinctBy { it.id }
         } catch (e: Exception) {
             emptyList()
         }
@@ -58,15 +58,16 @@ class LocalApplicationStore(private val filesDir: File) {
     }
 
     fun saveApplications(apps: List<Application>) = synchronized(lock) {
+        val uniqueApps = apps.distinctBy { it.id }
         try {
-            val raw = json.encodeToString(apps)
+            val raw = json.encodeToString(uniqueApps)
             val temp = File(appsFile.parentFile, "cached_applications.tmp")
             temp.writeText(raw)
             if (temp.exists()) {
                 if (appsFile.exists()) appsFile.delete()
                 temp.renameTo(appsFile)
             }
-            _applicationsFlow.value = apps
+            _applicationsFlow.value = uniqueApps
         } catch (_: Exception) {}
     }
 
@@ -75,13 +76,8 @@ class LocalApplicationStore(private val filesDir: File) {
     }
 
     fun saveOrUpdateApplication(app: Application) = synchronized(lock) {
-        val current = getCachedApplications().toMutableList()
-        val index = current.indexOfFirst { it.id == app.id }
-        if (index >= 0) {
-            current[index] = app
-        } else {
-            current.add(0, app)
-        }
+        val current = getCachedApplications().filter { it.id != app.id }.toMutableList()
+        current.add(0, app)
         saveApplications(current)
     }
 
@@ -115,13 +111,14 @@ class LocalApplicationStore(private val filesDir: File) {
         return try {
             val raw = notesFile.readText()
             val allNotes = json.decodeFromString<Map<String, List<Note>>>(raw)
-            allNotes[applicationId] ?: emptyList()
+            (allNotes[applicationId] ?: emptyList()).distinctBy { it.id }
         } catch (e: Exception) {
             emptyList()
         }
     }
 
     fun saveNotes(applicationId: String, notes: List<Note>) = synchronized(lock) {
+        val uniqueNotes = notes.distinctBy { it.id }
         try {
             val currentMap = if (notesFile.exists()) {
                 try {
@@ -132,7 +129,7 @@ class LocalApplicationStore(private val filesDir: File) {
             } else {
                 mutableMapOf()
             }
-            currentMap[applicationId] = notes
+            currentMap[applicationId] = uniqueNotes
             val raw = json.encodeToString(currentMap)
             val temp = File(notesFile.parentFile, "cached_notes.tmp")
             temp.writeText(raw)
@@ -144,7 +141,7 @@ class LocalApplicationStore(private val filesDir: File) {
     }
 
     fun addCachedNote(applicationId: String, note: Note) = synchronized(lock) {
-        val existing = getCachedNotes(applicationId).toMutableList()
+        val existing = getCachedNotes(applicationId).filter { it.id != note.id }.toMutableList()
         existing.add(0, note)
         saveNotes(applicationId, existing)
     }
