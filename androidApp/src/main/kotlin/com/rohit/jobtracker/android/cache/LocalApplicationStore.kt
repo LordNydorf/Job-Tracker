@@ -1,13 +1,19 @@
 package com.rohit.jobtracker.android.cache
 
 import android.content.Context
+import com.rohit.jobtracker.android.sync.PendingMutation
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Note
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
-class LocalApplicationStore(context: Context) {
+class LocalApplicationStore(private val filesDir: File) {
+
+    constructor(context: Context) : this(context.filesDir)
 
     private val json = Json {
         prettyPrint = false
@@ -15,9 +21,23 @@ class LocalApplicationStore(context: Context) {
         isLenient = true
     }
 
-    private val appsFile = File(context.filesDir, "cached_applications.json")
-    private val notesFile = File(context.filesDir, "cached_notes.json")
+    private val appsFile = File(filesDir, "cached_applications.json")
+    private val notesFile = File(filesDir, "cached_notes.json")
+    private val mutationsFile = File(filesDir, "pending_mutations.json")
     private val lock = Any()
+
+    private val _pendingMutationsCount = MutableStateFlow(0)
+    val pendingMutationsCount: StateFlow<Int> = _pendingMutationsCount.asStateFlow()
+
+    init {
+        synchronized(lock) {
+            _pendingMutationsCount.value = getPendingMutationsInternal().size
+        }
+    }
+
+    // ==========================================
+    // Applications Cache
+    // ==========================================
 
     fun getCachedApplications(): List<Application> = synchronized(lock) {
         if (!appsFile.exists()) return emptyList()
@@ -59,7 +79,27 @@ class LocalApplicationStore(context: Context) {
     fun deleteCachedApplication(id: String) = synchronized(lock) {
         val current = getCachedApplications().filter { it.id != id }
         saveApplications(current)
+
+        // Cascade delete notes in cache as well
+        try {
+            if (notesFile.exists()) {
+                val currentMap = json.decodeFromString<Map<String, List<Note>>>(notesFile.readText()).toMutableMap()
+                if (currentMap.remove(id) != null) {
+                    val raw = json.encodeToString(currentMap)
+                    val temp = File(notesFile.parentFile, "cached_notes.tmp")
+                    temp.writeText(raw)
+                    if (temp.exists()) {
+                        if (notesFile.exists()) notesFile.delete()
+                        temp.renameTo(notesFile)
+                    }
+                }
+            }
+        } catch (_: Exception) {}
     }
+
+    // ==========================================
+    // Notes Cache
+    // ==========================================
 
     fun getCachedNotes(applicationId: String): List<Note> = synchronized(lock) {
         if (!notesFile.exists()) return emptyList()
@@ -103,5 +143,51 @@ class LocalApplicationStore(context: Context) {
     fun deleteCachedNote(applicationId: String, noteId: String) = synchronized(lock) {
         val existing = getCachedNotes(applicationId).filter { it.id != noteId }
         saveNotes(applicationId, existing)
+    }
+
+    // ==========================================
+    // Pending Mutations Queue
+    // ==========================================
+
+    private fun getPendingMutationsInternal(): List<PendingMutation> {
+        if (!mutationsFile.exists()) return emptyList()
+        return try {
+            val raw = mutationsFile.readText()
+            json.decodeFromString<List<PendingMutation>>(raw)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    fun getPendingMutations(): List<PendingMutation> = synchronized(lock) {
+        getPendingMutationsInternal()
+    }
+
+    fun enqueueMutation(mutation: PendingMutation) = synchronized(lock) {
+        val current = getPendingMutationsInternal().toMutableList()
+        current.add(mutation)
+        saveMutationsInternal(current)
+    }
+
+    fun removeMutation(mutationId: String) = synchronized(lock) {
+        val current = getPendingMutationsInternal().filter { it.id != mutationId }
+        saveMutationsInternal(current)
+    }
+
+    fun clearPendingMutations() = synchronized(lock) {
+        saveMutationsInternal(emptyList())
+    }
+
+    private fun saveMutationsInternal(mutations: List<PendingMutation>) {
+        try {
+            val raw = json.encodeToString(mutations)
+            val temp = File(mutationsFile.parentFile, "pending_mutations.tmp")
+            temp.writeText(raw)
+            if (temp.exists()) {
+                if (mutationsFile.exists()) mutationsFile.delete()
+                temp.renameTo(mutationsFile)
+            }
+            _pendingMutationsCount.value = mutations.size
+        } catch (_: Exception) {}
     }
 }

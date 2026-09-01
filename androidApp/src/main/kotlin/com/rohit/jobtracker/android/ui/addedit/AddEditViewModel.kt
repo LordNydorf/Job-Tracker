@@ -8,6 +8,9 @@ import com.rohit.jobtracker.shared.model.CreateApplicationRequest
 import com.rohit.jobtracker.shared.model.Source
 import com.rohit.jobtracker.shared.model.Status
 import com.rohit.jobtracker.shared.model.UpdateApplicationRequest
+import com.rohit.jobtracker.android.sync.MutationType
+import com.rohit.jobtracker.android.sync.PendingMutation
+import com.rohit.jobtracker.shared.model.Application
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -20,6 +23,9 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import java.util.UUID
 
 data class AddEditUiState(
     val isEditMode: Boolean = false,
@@ -44,6 +50,11 @@ class AddEditViewModel(
     private val api: JobTrackerApi,
     private val localStore: LocalApplicationStore? = null
 ) : ViewModel() {
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     private val _uiState = MutableStateFlow(
         AddEditUiState(isEditMode = !applicationId.isNullOrBlank())
@@ -99,6 +110,7 @@ class AddEditViewModel(
                             salary = detectedSalary
                         )
                     }
+                    localStore?.saveOrUpdateApplication(app)
                 } else {
                     _uiState.update {
                         it.copy(
@@ -110,8 +122,7 @@ class AddEditViewModel(
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
-                        isLoading = false,
-                        generalError = e.message ?: "Failed to load application"
+                        isLoading = false
                     )
                 }
             }
@@ -191,43 +202,101 @@ class AddEditViewModel(
             null
         }
 
-        viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true, generalError = null) }
-            try {
-                val saved = if (state.isEditMode && !applicationId.isNullOrBlank()) {
-                    val updateReq = UpdateApplicationRequest(
-                        company = state.company.trim(),
-                        role = state.role.trim(),
-                        source = state.source,
-                        dateApplied = state.dateApplied,
-                        jobLink = state.jobLink.trim().takeIf { it.isNotEmpty() },
-                        status = state.status,
-                        reminderDays = state.reminderDays,
-                        salary = formattedSalary
-                    )
-                    api.updateApplication(applicationId, updateReq)
-                } else {
-                    val createReq = CreateApplicationRequest(
-                        company = state.company.trim(),
-                        role = state.role.trim(),
-                        source = state.source,
-                        dateApplied = state.dateApplied,
-                        jobLink = state.jobLink.trim().takeIf { it.isNotEmpty() },
-                        status = state.status,
-                        reminderDays = state.reminderDays,
-                        salary = formattedSalary
-                    )
-                    api.createApplication(createReq)
-                }
-                localStore?.saveOrUpdateApplication(saved)
-                _uiState.update { it.copy(isSaving = false) }
+        val now = Clock.System.now()
+
+        if (state.isEditMode && !applicationId.isNullOrBlank()) {
+            val updateReq = UpdateApplicationRequest(
+                company = state.company.trim(),
+                role = state.role.trim(),
+                source = state.source,
+                dateApplied = state.dateApplied,
+                jobLink = state.jobLink.trim().takeIf { it.isNotEmpty() },
+                status = state.status,
+                reminderDays = state.reminderDays,
+                salary = formattedSalary
+            )
+
+            // Optimistic local update
+            val existing = localStore?.getCachedApplication(applicationId)
+            val updatedApp = Application(
+                id = applicationId,
+                company = state.company.trim(),
+                role = state.role.trim(),
+                source = state.source,
+                dateApplied = state.dateApplied,
+                jobLink = state.jobLink.trim().takeIf { it.isNotEmpty() },
+                status = state.status,
+                lastUpdated = now,
+                reminderDays = state.reminderDays,
+                salary = formattedSalary
+            )
+            localStore?.saveOrUpdateApplication(updatedApp)
+
+            val mutation = PendingMutation(
+                id = UUID.randomUUID().toString(),
+                type = MutationType.UPDATE_APP,
+                entityId = applicationId,
+                payloadJson = json.encodeToString(updateReq),
+                createdAt = System.currentTimeMillis()
+            )
+            localStore?.enqueueMutation(mutation)
+
+            viewModelScope.launch {
                 _saveSuccessEvent.emit(Unit)
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isSaving = false,
-                        generalError = e.message ?: "Failed to save application"
-                    )
+                try {
+                    val serverApp = api.updateApplication(applicationId, updateReq)
+                    localStore?.saveOrUpdateApplication(serverApp)
+                    localStore?.removeMutation(mutation.id)
+                } catch (_: Exception) {
+                    // SyncWorker will drain mutation in background
+                }
+            }
+        } else {
+            val targetId = UUID.randomUUID().toString()
+            val createReq = CreateApplicationRequest(
+                id = targetId,
+                company = state.company.trim(),
+                role = state.role.trim(),
+                source = state.source,
+                dateApplied = state.dateApplied,
+                jobLink = state.jobLink.trim().takeIf { it.isNotEmpty() },
+                status = state.status,
+                reminderDays = state.reminderDays,
+                salary = formattedSalary
+            )
+
+            // Optimistic local save
+            val newApp = Application(
+                id = targetId,
+                company = state.company.trim(),
+                role = state.role.trim(),
+                source = state.source,
+                dateApplied = state.dateApplied,
+                jobLink = state.jobLink.trim().takeIf { it.isNotEmpty() },
+                status = state.status,
+                lastUpdated = now,
+                reminderDays = state.reminderDays,
+                salary = formattedSalary
+            )
+            localStore?.saveOrUpdateApplication(newApp)
+
+            val mutation = PendingMutation(
+                id = UUID.randomUUID().toString(),
+                type = MutationType.CREATE_APP,
+                entityId = targetId,
+                payloadJson = json.encodeToString(createReq),
+                createdAt = System.currentTimeMillis()
+            )
+            localStore?.enqueueMutation(mutation)
+
+            viewModelScope.launch {
+                _saveSuccessEvent.emit(Unit)
+                try {
+                    val created = api.createApplication(createReq)
+                    localStore?.saveOrUpdateApplication(created)
+                    localStore?.removeMutation(mutation.id)
+                } catch (_: Exception) {
+                    // SyncWorker will drain mutation in background
                 }
             }
         }

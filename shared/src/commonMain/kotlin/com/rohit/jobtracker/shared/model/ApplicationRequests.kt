@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CreateApplicationRequest(
+    val id: String? = null,
     val company: String,
     val role: String,
     val source: Source,
@@ -29,5 +30,6 @@ data class UpdateApplicationRequest(
 
 @Serializable
 data class CreateNoteRequest(
+    val id: String? = null,
     val text: String
 )

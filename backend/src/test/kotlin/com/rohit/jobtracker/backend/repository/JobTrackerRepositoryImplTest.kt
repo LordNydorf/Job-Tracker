@@ -158,4 +158,33 @@ class JobTrackerRepositoryImplTest {
         assertEquals(note2.id, remainingNotes.first().id)
         assertEquals("Hiring manager call", remainingNotes.first().text)
     }
+
+    @Test
+    fun testCreateApplicationAndNoteWithClientProvidedId() = runBlocking {
+        val customAppId = "client-app-uuid-999"
+        val customNoteId = "client-note-uuid-888"
+
+        val app = repository.createApplication(
+            CreateApplicationRequest(
+                id = customAppId,
+                company = "Linear",
+                role = "Product Designer",
+                source = Source.REFERRAL,
+                dateApplied = LocalDate.parse("2026-08-31")
+            )
+        )
+        assertEquals(customAppId, app.id)
+
+        val note = repository.addNote(
+            app.id,
+            CreateNoteRequest(id = customNoteId, text = "Client UUID note test")
+        )
+        assertNotNull(note)
+        assertEquals(customNoteId, note.id)
+        assertEquals(customAppId, note.applicationId)
+
+        val fetchedNotes = repository.getNotes(customAppId)
+        assertEquals(1, fetchedNotes.size)
+        assertEquals(customNoteId, fetchedNotes.first().id)
+    }
 }

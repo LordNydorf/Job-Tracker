@@ -70,7 +70,7 @@ class JobTrackerRepositoryImpl : JobTrackerRepository {
     }
 
     override suspend fun createApplication(request: CreateApplicationRequest): Application = dbQuery {
-        val newId = UUID.randomUUID().toString()
+        val newId = request.id?.trim()?.takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
         val now = Clock.System.now()
         val trimmedSalary = request.salary?.trim()?.takeIf { s -> s.isNotEmpty() }
 
@@ -160,7 +160,7 @@ class JobTrackerRepositoryImpl : JobTrackerRepository {
 
         if (!appExists) return@dbQuery null
 
-        val noteId = UUID.randomUUID().toString()
+        val noteId = request.id?.trim()?.takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
         val now = Clock.System.now()
 
         NotesTable.insert {

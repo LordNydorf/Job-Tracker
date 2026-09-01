@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rohit.jobtracker.android.cache.LocalApplicationStore
 import com.rohit.jobtracker.android.network.ServerConfig
+import com.rohit.jobtracker.android.sync.MutationType
+import com.rohit.jobtracker.android.sync.PendingMutation
 import com.rohit.jobtracker.android.ui.theme.ThemeConfig
 import com.rohit.jobtracker.android.ui.theme.ThemeMode
 import com.rohit.jobtracker.shared.api.JobTrackerApi
@@ -15,6 +17,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import java.util.UUID
 
 enum class StatusFilter(val displayName: String) {
     ALL("All"),
@@ -41,6 +46,7 @@ data class ApplicationListUiState(
     val currentServerUrl: String = "",
     val currentApiKey: String = "",
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val pendingMutationsCount: Int = 0,
     val errorMessage: String? = null
 )
 
@@ -51,6 +57,11 @@ class ApplicationListViewModel(
     private val themeConfig: ThemeConfig? = null
 ) : ViewModel() {
 
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
+
     private val cached = localStore?.getCachedApplications() ?: emptyList()
 
     private val _uiState = MutableStateFlow(
@@ -60,7 +71,8 @@ class ApplicationListViewModel(
             filteredApplications = applyFilterAndSort(cached, StatusFilter.ALL, SortOption.LAST_UPDATED, ""),
             currentServerUrl = serverConfig?.getBaseUrl() ?: ServerConfig.PRESETS.first().url,
             currentApiKey = serverConfig?.getApiKey() ?: "",
-            themeMode = themeConfig?.getThemeMode() ?: ThemeMode.SYSTEM
+            themeMode = themeConfig?.getThemeMode() ?: ThemeMode.SYSTEM,
+            pendingMutationsCount = localStore?.pendingMutationsCount?.value ?: 0
         )
     )
     val uiState: StateFlow<ApplicationListUiState> = _uiState.asStateFlow()
@@ -70,6 +82,13 @@ class ApplicationListViewModel(
             viewModelScope.launch {
                 modeFlow.collect { mode ->
                     _uiState.update { it.copy(themeMode = mode) }
+                }
+            }
+        }
+        localStore?.pendingMutationsCount?.let { countFlow ->
+            viewModelScope.launch {
+                countFlow.collect { count ->
+                    _uiState.update { it.copy(pendingMutationsCount = count) }
                 }
             }
         }
@@ -156,11 +175,23 @@ class ApplicationListViewModel(
             state.copy(applications = updatedList, filteredApplications = filtered)
         }
 
+        val updateReq = UpdateApplicationRequest(status = newStatus)
+        val mutation = PendingMutation(
+            id = UUID.randomUUID().toString(),
+            type = MutationType.UPDATE_APP,
+            entityId = applicationId,
+            payloadJson = json.encodeToString(updateReq),
+            createdAt = System.currentTimeMillis()
+        )
+        localStore?.enqueueMutation(mutation)
+
         viewModelScope.launch {
             try {
-                api.updateApplication(applicationId, UpdateApplicationRequest(status = newStatus))
-            } catch (e: Exception) {
-                loadApplications() // Rollback on network failure
+                val serverApp = api.updateApplication(applicationId, updateReq)
+                localStore?.saveOrUpdateApplication(serverApp)
+                localStore?.removeMutation(mutation.id)
+            } catch (_: Exception) {
+                // SyncWorker will drain in background
             }
         }
     }

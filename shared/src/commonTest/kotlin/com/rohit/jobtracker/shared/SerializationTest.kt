@@ -94,6 +94,7 @@ class SerializationTest {
     @Test
     fun testRequestDtosSerialization() {
         val createReq = CreateApplicationRequest(
+            id = "client-uuid-123",
             company = "Stripe",
             role = "Backend Kotlin Engineer",
             source = Source.BRAINTRUST,
@@ -105,6 +106,7 @@ class SerializationTest {
         val createSerialized = json.encodeToString(createReq)
         val createDeserialized = json.decodeFromString<CreateApplicationRequest>(createSerialized)
         assertEquals(createReq, createDeserialized)
+        assertEquals("client-uuid-123", createDeserialized.id)
 
         val updateReq = UpdateApplicationRequest(
             status = Status.OFFER,
@@ -114,10 +116,11 @@ class SerializationTest {
         val updateDeserialized = json.decodeFromString<UpdateApplicationRequest>(updateSerialized)
         assertEquals(updateReq, updateDeserialized)
 
-        val noteReq = CreateNoteRequest(text = "Offer received!")
+        val noteReq = CreateNoteRequest(id = "client-note-456", text = "Offer received!")
         val noteSerialized = json.encodeToString(noteReq)
         val noteDeserialized = json.decodeFromString<CreateNoteRequest>(noteSerialized)
         assertEquals(noteReq, noteDeserialized)
+        assertEquals("client-note-456", noteDeserialized.id)
     }
 
     @Test

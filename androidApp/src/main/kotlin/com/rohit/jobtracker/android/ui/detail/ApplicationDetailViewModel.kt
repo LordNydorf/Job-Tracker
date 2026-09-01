@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rohit.jobtracker.android.cache.LocalApplicationStore
 import com.rohit.jobtracker.android.network.ServerConfig
+import com.rohit.jobtracker.android.sync.MutationType
+import com.rohit.jobtracker.android.sync.PendingMutation
 import com.rohit.jobtracker.android.ui.theme.ThemeConfig
 import com.rohit.jobtracker.android.ui.theme.ThemeMode
 import com.rohit.jobtracker.shared.api.JobTrackerApi
@@ -20,6 +22,10 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import java.util.UUID
 
 data class ApplicationDetailUiState(
     val isLoading: Boolean = true,
@@ -42,6 +48,11 @@ class ApplicationDetailViewModel(
     private val serverConfig: ServerConfig? = null,
     private val themeConfig: ThemeConfig? = null
 ) : ViewModel() {
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     private val cachedApp = localStore?.getCachedApplication(applicationId)
     private val cachedNotes = localStore?.getCachedNotes(applicationId) ?: emptyList()
@@ -123,29 +134,34 @@ class ApplicationDetailViewModel(
         val currentApp = _uiState.value.application ?: return
         if (currentApp.status == newStatus) return
 
-        val updatedApp = currentApp.copy(status = newStatus)
+        val now = Clock.System.now()
+        val updatedApp = currentApp.copy(status = newStatus, lastUpdated = now)
         localStore?.saveOrUpdateApplication(updatedApp)
 
         _uiState.update {
             it.copy(
                 application = updatedApp,
-                isUpdatingStatus = true
+                isUpdatingStatus = false
             )
         }
 
+        val updateReq = UpdateApplicationRequest(status = newStatus)
+        val mutation = PendingMutation(
+            id = UUID.randomUUID().toString(),
+            type = MutationType.UPDATE_APP,
+            entityId = applicationId,
+            payloadJson = json.encodeToString(updateReq),
+            createdAt = System.currentTimeMillis()
+        )
+        localStore?.enqueueMutation(mutation)
+
         viewModelScope.launch {
             try {
-                val updated = api.updateApplication(applicationId, UpdateApplicationRequest(status = newStatus))
-                localStore?.saveOrUpdateApplication(updated)
-                _uiState.update { it.copy(application = updated, isUpdatingStatus = false) }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        application = currentApp,
-                        isUpdatingStatus = false,
-                        errorMessage = "Failed to update status: ${e.message}"
-                    )
-                }
+                val serverApp = api.updateApplication(applicationId, updateReq)
+                localStore?.saveOrUpdateApplication(serverApp)
+                localStore?.removeMutation(mutation.id)
+            } catch (_: Exception) {
+                // Background SyncWorker will retry
             }
         }
     }
@@ -158,25 +174,41 @@ class ApplicationDetailViewModel(
         val text = _uiState.value.newNoteText.trim()
         if (text.isEmpty()) return
 
+        val targetNoteId = UUID.randomUUID().toString()
+        val now = Clock.System.now()
+        val localNote = Note(
+            id = targetNoteId,
+            applicationId = applicationId,
+            text = text,
+            createdAt = now
+        )
+
+        localStore?.addCachedNote(applicationId, localNote)
+        _uiState.update {
+            it.copy(
+                newNoteText = "",
+                notes = listOf(localNote) + it.notes
+            )
+        }
+
+        val createNoteReq = CreateNoteRequest(id = targetNoteId, text = text)
+        val mutation = PendingMutation(
+            id = UUID.randomUUID().toString(),
+            type = MutationType.ADD_NOTE,
+            entityId = targetNoteId,
+            parentEntityId = applicationId,
+            payloadJson = json.encodeToString(createNoteReq),
+            createdAt = System.currentTimeMillis()
+        )
+        localStore?.enqueueMutation(mutation)
+
         viewModelScope.launch {
-            _uiState.update { it.copy(isAddingNote = true) }
             try {
-                val newNote = api.addNote(applicationId, CreateNoteRequest(text = text))
-                localStore?.addCachedNote(applicationId, newNote)
-                _uiState.update {
-                    it.copy(
-                        isAddingNote = false,
-                        newNoteText = "",
-                        notes = listOf(newNote) + it.notes
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isAddingNote = false,
-                        errorMessage = "Failed to add note: ${e.message}"
-                    )
-                }
+                val serverNote = api.addNote(applicationId, createNoteReq)
+                localStore?.addCachedNote(applicationId, serverNote)
+                localStore?.removeMutation(mutation.id)
+            } catch (_: Exception) {
+                // Background SyncWorker will retry
             }
         }
     }
@@ -187,46 +219,46 @@ class ApplicationDetailViewModel(
         localStore?.deleteCachedNote(applicationId, noteId)
         _uiState.update { it.copy(notes = updatedNotes) }
 
+        val mutation = PendingMutation(
+            id = UUID.randomUUID().toString(),
+            type = MutationType.DELETE_NOTE,
+            entityId = noteId,
+            parentEntityId = applicationId,
+            createdAt = System.currentTimeMillis()
+        )
+        localStore?.enqueueMutation(mutation)
+
         viewModelScope.launch {
             try {
                 val success = api.deleteNote(applicationId, noteId)
-                if (!success) {
-                    _uiState.update {
-                        it.copy(
-                            notes = currentNotes,
-                            errorMessage = "Failed to delete note"
-                        )
-                    }
+                if (success) {
+                    localStore?.removeMutation(mutation.id)
                 }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        notes = currentNotes,
-                        errorMessage = "Failed to delete note: ${e.message}"
-                    )
-                }
+            } catch (_: Exception) {
+                // Background SyncWorker will retry
             }
         }
     }
 
     fun deleteApplication() {
+        localStore?.deleteCachedApplication(applicationId)
+        val mutation = PendingMutation(
+            id = UUID.randomUUID().toString(),
+            type = MutationType.DELETE_APP,
+            entityId = applicationId,
+            createdAt = System.currentTimeMillis()
+        )
+        localStore?.enqueueMutation(mutation)
+
         viewModelScope.launch {
-            _uiState.update { it.copy(isDeleting = true) }
+            _deleteSuccessEvent.emit(Unit)
             try {
                 val success = api.deleteApplication(applicationId)
                 if (success) {
-                    localStore?.deleteCachedApplication(applicationId)
-                    _deleteSuccessEvent.emit(Unit)
-                } else {
-                    _uiState.update { it.copy(isDeleting = false, errorMessage = "Failed to delete application") }
+                    localStore?.removeMutation(mutation.id)
                 }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isDeleting = false,
-                        errorMessage = "Failed to delete application: ${e.message}"
-                    )
-                }
+            } catch (_: Exception) {
+                // Background SyncWorker will retry
             }
         }
     }

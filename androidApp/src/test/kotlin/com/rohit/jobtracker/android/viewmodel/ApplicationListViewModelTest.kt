@@ -36,7 +36,7 @@ class FakeJobTrackerApi(
 
     override suspend fun createApplication(request: CreateApplicationRequest): Application {
         val app = Application(
-            id = "app-${applications.size + 1}",
+            id = request.id ?: "app-${applications.size + 1}",
             company = request.company,
             role = request.role,
             source = request.source,
@@ -72,7 +72,7 @@ class FakeJobTrackerApi(
     override suspend fun getNotes(applicationId: String): List<Note> = notesMap[applicationId] ?: emptyList()
 
     override suspend fun addNote(applicationId: String, request: CreateNoteRequest): Note {
-        val note = Note(id = "note-${System.nanoTime()}", applicationId = applicationId, text = request.text, createdAt = Instant.parse("2026-08-31T12:00:00Z"))
+        val note = Note(id = request.id ?: "note-${System.nanoTime()}", applicationId = applicationId, text = request.text, createdAt = Instant.parse("2026-08-31T12:00:00Z"))
         val list = notesMap.getOrPut(applicationId) { mutableListOf() }
         list.add(0, note)
         return note
