@@ -8,14 +8,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,8 +29,13 @@ import com.rohit.jobtracker.android.ui.detail.ApplicationDetailScreen
 import com.rohit.jobtracker.android.ui.list.ApplicationListScreen
 import com.rohit.jobtracker.android.ui.navigation.NavRoute
 import com.rohit.jobtracker.android.ui.theme.JobTrackerTheme
+import com.rohit.jobtracker.android.ui.theme.ThemeConfig
+import com.rohit.jobtracker.android.ui.theme.ThemeMode
+import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
+
+    private val themeConfig: ThemeConfig by inject()
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -48,7 +56,15 @@ class MainActivity : ComponentActivity() {
         val targetApplicationId = intent.getStringExtra("applicationId")
 
         setContent {
-            JobTrackerTheme {
+            val themeMode by themeConfig.themeMode.collectAsStateWithLifecycle()
+            val isSystemDark = isSystemInDarkTheme()
+            val darkTheme = when (themeMode) {
+                ThemeMode.SYSTEM -> isSystemDark
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+            }
+
+            JobTrackerTheme(darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

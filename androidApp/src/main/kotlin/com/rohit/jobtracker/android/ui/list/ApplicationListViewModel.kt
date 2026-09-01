@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rohit.jobtracker.android.cache.LocalApplicationStore
 import com.rohit.jobtracker.android.network.ServerConfig
+import com.rohit.jobtracker.android.ui.theme.ThemeConfig
+import com.rohit.jobtracker.android.ui.theme.ThemeMode
 import com.rohit.jobtracker.shared.api.JobTrackerApi
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Status
@@ -38,13 +40,15 @@ data class ApplicationListUiState(
     val searchQuery: String = "",
     val currentServerUrl: String = "",
     val currentApiKey: String = "",
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val errorMessage: String? = null
 )
 
 class ApplicationListViewModel(
     private val api: JobTrackerApi,
     private val localStore: LocalApplicationStore? = null,
-    private val serverConfig: ServerConfig? = null
+    private val serverConfig: ServerConfig? = null,
+    private val themeConfig: ThemeConfig? = null
 ) : ViewModel() {
 
     private val cached = localStore?.getCachedApplications() ?: emptyList()
@@ -55,12 +59,20 @@ class ApplicationListViewModel(
             applications = cached,
             filteredApplications = applyFilterAndSort(cached, StatusFilter.ALL, SortOption.LAST_UPDATED, ""),
             currentServerUrl = serverConfig?.getBaseUrl() ?: ServerConfig.PRESETS.first().url,
-            currentApiKey = serverConfig?.getApiKey() ?: ""
+            currentApiKey = serverConfig?.getApiKey() ?: "",
+            themeMode = themeConfig?.getThemeMode() ?: ThemeMode.SYSTEM
         )
     )
     val uiState: StateFlow<ApplicationListUiState> = _uiState.asStateFlow()
 
     init {
+        themeConfig?.themeMode?.let { modeFlow ->
+            viewModelScope.launch {
+                modeFlow.collect { mode ->
+                    _uiState.update { it.copy(themeMode = mode) }
+                }
+            }
+        }
         loadApplications()
     }
 
@@ -108,6 +120,11 @@ class ApplicationListViewModel(
             )
         }
         loadApplications()
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        themeConfig?.setThemeMode(mode)
+        _uiState.update { it.copy(themeMode = mode) }
     }
 
     fun setFilter(filter: StatusFilter) {

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rohit.jobtracker.android.cache.LocalApplicationStore
 import com.rohit.jobtracker.android.network.ServerConfig
+import com.rohit.jobtracker.android.ui.theme.ThemeConfig
+import com.rohit.jobtracker.android.ui.theme.ThemeMode
 import com.rohit.jobtracker.shared.api.JobTrackerApi
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.CreateNoteRequest
@@ -29,6 +31,7 @@ data class ApplicationDetailUiState(
     val newNoteText: String = "",
     val currentServerUrl: String = "",
     val currentApiKey: String = "",
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val errorMessage: String? = null
 )
 
@@ -36,7 +39,8 @@ class ApplicationDetailViewModel(
     private val applicationId: String,
     private val api: JobTrackerApi,
     private val localStore: LocalApplicationStore? = null,
-    private val serverConfig: ServerConfig? = null
+    private val serverConfig: ServerConfig? = null,
+    private val themeConfig: ThemeConfig? = null
 ) : ViewModel() {
 
     private val cachedApp = localStore?.getCachedApplication(applicationId)
@@ -48,7 +52,8 @@ class ApplicationDetailViewModel(
             application = cachedApp,
             notes = cachedNotes,
             currentServerUrl = serverConfig?.getBaseUrl() ?: ServerConfig.PRESETS.first().url,
-            currentApiKey = serverConfig?.getApiKey() ?: ""
+            currentApiKey = serverConfig?.getApiKey() ?: "",
+            themeMode = themeConfig?.getThemeMode() ?: ThemeMode.SYSTEM
         )
     )
     val uiState: StateFlow<ApplicationDetailUiState> = _uiState.asStateFlow()
@@ -57,6 +62,13 @@ class ApplicationDetailViewModel(
     val deleteSuccessEvent: SharedFlow<Unit> = _deleteSuccessEvent.asSharedFlow()
 
     init {
+        themeConfig?.themeMode?.let { modeFlow ->
+            viewModelScope.launch {
+                modeFlow.collect { mode ->
+                    _uiState.update { it.copy(themeMode = mode) }
+                }
+            }
+        }
         loadData()
     }
 
@@ -69,6 +81,11 @@ class ApplicationDetailViewModel(
             )
         }
         loadData()
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        themeConfig?.setThemeMode(mode)
+        _uiState.update { it.copy(themeMode = mode) }
     }
 
     fun loadData() {

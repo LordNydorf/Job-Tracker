@@ -17,9 +17,15 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
+import com.rohit.jobtracker.android.ui.theme.ThemeConfig
+
 val appModule = module {
     single {
         ServerConfig(context = androidContext())
+    }
+
+    single {
+        ThemeConfig(context = androidContext())
     }
 
     single {
@@ -52,7 +58,7 @@ val appModule = module {
         )
     }
 
-    viewModel { ApplicationListViewModel(api = get(), localStore = get(), serverConfig = get()) }
+    viewModel { ApplicationListViewModel(api = get(), localStore = get(), serverConfig = get(), themeConfig = get()) }
     viewModel { (applicationId: String?) -> AddEditViewModel(applicationId = applicationId, api = get(), localStore = get()) }
-    viewModel { (applicationId: String) -> ApplicationDetailViewModel(applicationId = applicationId, api = get(), localStore = get(), serverConfig = get()) }
+    viewModel { (applicationId: String) -> ApplicationDetailViewModel(applicationId = applicationId, api = get(), localStore = get(), serverConfig = get(), themeConfig = get()) }
 }

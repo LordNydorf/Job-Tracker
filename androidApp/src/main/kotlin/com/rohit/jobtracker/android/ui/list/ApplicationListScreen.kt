@@ -91,8 +91,10 @@ fun ApplicationListScreen(
         ServerConfigDialog(
             currentUrl = uiState.currentServerUrl,
             currentApiKey = uiState.currentApiKey,
+            currentThemeMode = uiState.themeMode,
             onDismiss = { showServerDialog = false },
-            onSave = { url, key -> viewModel.updateServerConfig(url, key) }
+            onSave = { url, key -> viewModel.updateServerConfig(url, key) },
+            onThemeModeChange = { mode -> viewModel.setThemeMode(mode) }
         )
     }
 
