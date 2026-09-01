@@ -46,7 +46,13 @@
 - [x] Backend is containerized, cloud-ready, and reachable outside localhost.
 - [x] Repo is clean enough to link from a portfolio/resume.
 
+## v2 Scope
+- Offline write queue: client-generated UUIDs, optimistic local writes via LocalApplicationStore, WorkManager-backed background sync to survive app backgrounding/kill, pending/synced status indicator in the UI. Fixes Render free-tier cold-start blocking writes.
+- Light mode visual revamp: the existing light theme variant needs its own design pass (colors/contrast), separate from the dark-mode-first design work already done.
+
 ### Later / Parking Lot
-- Multi-user authentication (JWT / OAuth2).
-- iOS Compose Multiplatform target.
-- Resume / CV PDF attachment parsing.
+- iOS app via Compose Multiplatform/SwiftUI — needs a Mac, real second UI layer, project-sized on its own
+- Multi-user auth — no second user exists yet; revisit only if that changes
+- Resume parsing (auto-fill fields from pasted job descriptions/resume) — real value, but a distinct parsing subsystem, own project
+- AI-powered daily job matching/scraping based on resume — depends on resume parsing being done first; scraping job sites is genuinely hard (many block it); treat as multi-week effort, not a feature
+
