@@ -29,9 +29,13 @@ class LocalApplicationStore(private val filesDir: File) {
     private val _pendingMutationsCount = MutableStateFlow(0)
     val pendingMutationsCount: StateFlow<Int> = _pendingMutationsCount.asStateFlow()
 
+    private val _applicationsFlow = MutableStateFlow<List<Application>>(emptyList())
+    val applicationsFlow: StateFlow<List<Application>> = _applicationsFlow.asStateFlow()
+
     init {
         synchronized(lock) {
             _pendingMutationsCount.value = getPendingMutationsInternal().size
+            _applicationsFlow.value = getCachedApplicationsInternal()
         }
     }
 
@@ -39,7 +43,7 @@ class LocalApplicationStore(private val filesDir: File) {
     // Applications Cache
     // ==========================================
 
-    fun getCachedApplications(): List<Application> = synchronized(lock) {
+    private fun getCachedApplicationsInternal(): List<Application> {
         if (!appsFile.exists()) return emptyList()
         return try {
             val raw = appsFile.readText()
@@ -47,6 +51,10 @@ class LocalApplicationStore(private val filesDir: File) {
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    fun getCachedApplications(): List<Application> = synchronized(lock) {
+        getCachedApplicationsInternal()
     }
 
     fun saveApplications(apps: List<Application>) = synchronized(lock) {
@@ -58,6 +66,7 @@ class LocalApplicationStore(private val filesDir: File) {
                 if (appsFile.exists()) appsFile.delete()
                 temp.renameTo(appsFile)
             }
+            _applicationsFlow.value = apps
         } catch (_: Exception) {}
     }
 

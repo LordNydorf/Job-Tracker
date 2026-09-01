@@ -160,4 +160,38 @@ class ApplicationListViewModelTest {
         val sortedCompanies = viewModel.uiState.value.filteredApplications.map { it.company }
         assertEquals(listOf("Alpha Labs", "Beta Corp", "Zebra Inc"), sortedCompanies)
     }
+
+    @Test
+    fun testOfflineApplicationAddedImmediatelyUpdatesUiState() = runTest(testDispatcher) {
+        val testDbDir = java.io.File("build/test-data/vm_offline_test_${System.nanoTime()}")
+        testDbDir.mkdirs()
+        val localStore = com.rohit.jobtracker.android.cache.LocalApplicationStore(testDbDir)
+
+        // API is empty/offline
+        val api = FakeJobTrackerApi(mutableListOf())
+        val viewModel = ApplicationListViewModel(api = api, localStore = localStore)
+        advanceUntilIdle()
+
+        assertEquals(0, viewModel.uiState.value.applications.size)
+
+        // An offline application is created
+        val newApp = Application(
+            id = "app-offline-101",
+            company = "Netflix",
+            role = "Senior Kotlin Dev",
+            source = Source.REFERRAL,
+            dateApplied = LocalDate.parse("2026-08-31"),
+            status = Status.INTERVIEW,
+            lastUpdated = Instant.parse("2026-08-31T10:00:00Z")
+        )
+        localStore.saveOrUpdateApplication(newApp)
+        advanceUntilIdle()
+
+        // Verify it immediately updates ViewModel uiState without closing or refreshing the app
+        assertEquals(1, viewModel.uiState.value.applications.size)
+        assertEquals("Netflix", viewModel.uiState.value.applications.first().company)
+        assertEquals(1, viewModel.uiState.value.filteredApplications.size)
+
+        testDbDir.deleteRecursively()
+    }
 }

@@ -92,6 +92,20 @@ class ApplicationListViewModel(
                 }
             }
         }
+        localStore?.applicationsFlow?.let { appsFlow ->
+            viewModelScope.launch {
+                appsFlow.collect { apps ->
+                    _uiState.update { state ->
+                        val filtered = applyFilterAndSort(apps, state.statusFilter, state.sortOption, state.searchQuery)
+                        state.copy(
+                            applications = apps,
+                            filteredApplications = filtered,
+                            isLoading = false
+                        )
+                    }
+                }
+            }
+        }
         loadApplications()
     }
 

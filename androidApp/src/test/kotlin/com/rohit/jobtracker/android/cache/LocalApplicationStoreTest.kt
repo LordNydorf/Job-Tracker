@@ -128,4 +128,26 @@ class LocalApplicationStoreTest {
         assertEquals(0, store.pendingMutationsCount.value)
         assertTrue(store.getPendingMutations().isEmpty())
     }
+
+    @Test
+    fun testApplicationsFlowEmitsUpdates() {
+        assertEquals(0, store.applicationsFlow.value.size)
+
+        val app = Application(
+            id = "app-flow-1",
+            company = "Figma",
+            role = "Design Engineer",
+            source = Source.OTHER,
+            dateApplied = LocalDate.parse("2026-08-31"),
+            status = Status.APPLIED,
+            lastUpdated = Instant.parse("2026-08-31T10:00:00Z")
+        )
+
+        store.saveOrUpdateApplication(app)
+        assertEquals(1, store.applicationsFlow.value.size)
+        assertEquals("app-flow-1", store.applicationsFlow.value.first().id)
+
+        store.deleteCachedApplication("app-flow-1")
+        assertEquals(0, store.applicationsFlow.value.size)
+    }
 }
