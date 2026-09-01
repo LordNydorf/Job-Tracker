@@ -99,4 +99,9 @@ class LocalApplicationStore(context: Context) {
         existing.add(0, note)
         saveNotes(applicationId, existing)
     }
+
+    fun deleteCachedNote(applicationId: String, noteId: String) = synchronized(lock) {
+        val existing = getCachedNotes(applicationId).filter { it.id != noteId }
+        saveNotes(applicationId, existing)
+    }
 }

@@ -131,4 +131,31 @@ class JobTrackerRepositoryImplTest {
         assertNull(repository.getApplication(app.id))
         assertEquals(0, repository.getNotes(app.id).size)
     }
+
+    @Test
+    fun testDeleteNoteRemovesNoteFromApplication() = runBlocking {
+        val app = repository.createApplication(
+            CreateApplicationRequest(
+                company = "Vercel",
+                role = "Frontend Engineer",
+                source = Source.WELLFOUND,
+                dateApplied = LocalDate.parse("2026-08-31")
+            )
+        )
+
+        val note1 = repository.addNote(app.id, CreateNoteRequest(text = "Initial outreach"))
+        val note2 = repository.addNote(app.id, CreateNoteRequest(text = "Hiring manager call"))
+
+        assertNotNull(note1)
+        assertNotNull(note2)
+        assertEquals(2, repository.getNotes(app.id).size)
+
+        val deleted = repository.deleteNote(app.id, note1.id)
+        assertTrue(deleted)
+
+        val remainingNotes = repository.getNotes(app.id)
+        assertEquals(1, remainingNotes.size)
+        assertEquals(note2.id, remainingNotes.first().id)
+        assertEquals("Hiring manager call", remainingNotes.first().text)
+    }
 }

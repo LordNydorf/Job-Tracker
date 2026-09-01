@@ -123,6 +123,25 @@ fun Application.configureApplicationRoutes(repository: JobTrackerRepository) {
                     call.respond(HttpStatusCode.NotFound, mapOf("error" to "Application with id '$id' not found"))
                 }
             }
+
+            // DELETE /applications/{id}/notes/{noteId} - delete note from application
+            delete("/{id}/notes/{noteId}") {
+                val id = call.parameters["id"] ?: run {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing application id"))
+                    return@delete
+                }
+                val noteId = call.parameters["noteId"] ?: run {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing note id"))
+                    return@delete
+                }
+
+                val deleted = repository.deleteNote(id, noteId)
+                if (deleted) {
+                    call.respond(HttpStatusCode.OK, mapOf("success" to true))
+                } else {
+                    call.respond(HttpStatusCode.NotFound, mapOf("error" to "Note with id '$noteId' not found"))
+                }
+            }
         }
     }
 }

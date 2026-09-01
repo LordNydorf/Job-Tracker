@@ -14,6 +14,7 @@ import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
@@ -28,6 +29,7 @@ interface JobTrackerRepository {
     suspend fun deleteApplication(id: String): Boolean
     suspend fun getNotes(applicationId: String): List<Note>
     suspend fun addNote(applicationId: String, request: CreateNoteRequest): Note?
+    suspend fun deleteNote(applicationId: String, noteId: String): Boolean
 }
 
 class JobTrackerRepositoryImpl : JobTrackerRepository {
@@ -179,5 +181,12 @@ class JobTrackerRepositoryImpl : JobTrackerRepository {
             text = request.text.trim(),
             createdAt = now
         )
+    }
+
+    override suspend fun deleteNote(applicationId: String, noteId: String): Boolean = dbQuery {
+        val deletedRows = NotesTable.deleteWhere {
+            (NotesTable.id eq noteId) and (NotesTable.applicationId eq applicationId)
+        }
+        deletedRows > 0
     }
 }

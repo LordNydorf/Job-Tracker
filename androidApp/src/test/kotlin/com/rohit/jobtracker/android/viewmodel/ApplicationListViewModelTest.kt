@@ -65,12 +65,22 @@ class FakeJobTrackerApi(
         return updated
     }
 
+    private var notesMap: MutableMap<String, MutableList<Note>> = mutableMapOf()
+
     override suspend fun deleteApplication(id: String): Boolean = applications.removeIf { it.id == id }
 
-    override suspend fun getNotes(applicationId: String): List<Note> = emptyList()
+    override suspend fun getNotes(applicationId: String): List<Note> = notesMap[applicationId] ?: emptyList()
 
     override suspend fun addNote(applicationId: String, request: CreateNoteRequest): Note {
-        return Note(id = "note-1", applicationId = applicationId, text = request.text, createdAt = Instant.parse("2026-08-31T12:00:00Z"))
+        val note = Note(id = "note-${System.nanoTime()}", applicationId = applicationId, text = request.text, createdAt = Instant.parse("2026-08-31T12:00:00Z"))
+        val list = notesMap.getOrPut(applicationId) { mutableListOf() }
+        list.add(0, note)
+        return note
+    }
+
+    override suspend fun deleteNote(applicationId: String, noteId: String): Boolean {
+        val list = notesMap[applicationId] ?: return false
+        return list.removeIf { it.id == noteId }
     }
 }
 

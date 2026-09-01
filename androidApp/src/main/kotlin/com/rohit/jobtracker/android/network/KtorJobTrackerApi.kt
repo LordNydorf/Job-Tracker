@@ -103,4 +103,11 @@ class KtorJobTrackerApi(
         }
         throw Exception("Failed to add note (${response.status.value})")
     }
+
+    override suspend fun deleteNote(applicationId: String, noteId: String): Boolean {
+        val response = client.delete("$baseUrl/applications/$applicationId/notes/$noteId") {
+            header("X-API-Key", apiKey)
+        }
+        return response.status == HttpStatusCode.OK || response.status == HttpStatusCode.NoContent
+    }
 }

@@ -164,6 +164,34 @@ class ApplicationDetailViewModel(
         }
     }
 
+    fun deleteNote(noteId: String) {
+        val currentNotes = _uiState.value.notes
+        val updatedNotes = currentNotes.filter { it.id != noteId }
+        localStore?.deleteCachedNote(applicationId, noteId)
+        _uiState.update { it.copy(notes = updatedNotes) }
+
+        viewModelScope.launch {
+            try {
+                val success = api.deleteNote(applicationId, noteId)
+                if (!success) {
+                    _uiState.update {
+                        it.copy(
+                            notes = currentNotes,
+                            errorMessage = "Failed to delete note"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        notes = currentNotes,
+                        errorMessage = "Failed to delete note: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
     fun deleteApplication() {
         viewModelScope.launch {
             _uiState.update { it.copy(isDeleting = true) }

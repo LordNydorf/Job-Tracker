@@ -14,4 +14,5 @@ interface JobTrackerApi {
     suspend fun deleteApplication(id: String): Boolean
     suspend fun getNotes(applicationId: String): List<Note>
     suspend fun addNote(applicationId: String, request: CreateNoteRequest): Note
+    suspend fun deleteNote(applicationId: String, noteId: String): Boolean
 }

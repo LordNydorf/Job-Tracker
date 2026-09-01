@@ -69,6 +69,8 @@ import org.koin.core.parameter.parametersOf
 
 import androidx.compose.material.icons.filled.Edit
 
+import com.rohit.jobtracker.shared.model.Note
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ApplicationDetailScreen(
@@ -81,6 +83,7 @@ fun ApplicationDetailScreen(
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var noteToDelete by remember { mutableStateOf<Note?>(null) }
     var showServerDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -117,6 +120,32 @@ fun ApplicationDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (noteToDelete != null) {
+        val note = noteToDelete!!
+        AlertDialog(
+            onDismissRequest = { noteToDelete = null },
+            title = { Text("Delete Note?") },
+            text = { Text("Are you sure you want to delete this note from the activity log?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val id = note.id
+                        noteToDelete = null
+                        viewModel.deleteNote(id)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { noteToDelete = null }) {
                     Text("Cancel")
                 }
             }
@@ -408,7 +437,8 @@ fun ApplicationDetailScreen(
                         ) { index, note ->
                             TimelineNoteItem(
                                 note = note,
-                                isLast = index == uiState.notes.lastIndex
+                                isLast = index == uiState.notes.lastIndex,
+                                onDelete = { noteToDelete = note }
                             )
                         }
                     }

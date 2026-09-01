@@ -127,4 +127,38 @@ class ApplicationDetailViewModelTest {
 
         job.cancel()
     }
+
+    @Test
+    fun testDeleteNoteRemovesNoteFromDetailState() = runTest(testDispatcher) {
+        val testApp = Application(
+            id = "app-400",
+            company = "Stripe",
+            role = "Backend Eng",
+            source = Source.REFERRAL,
+            dateApplied = LocalDate.parse("2026-08-31"),
+            status = Status.INTERVIEW,
+            lastUpdated = Instant.parse("2026-08-31T10:00:00Z")
+        )
+
+        val api = FakeJobTrackerApi(mutableListOf(testApp))
+        val viewModel = ApplicationDetailViewModel(applicationId = "app-400", api = api)
+        advanceUntilIdle()
+
+        viewModel.updateNewNoteText("First note")
+        viewModel.addNote()
+        advanceUntilIdle()
+
+        viewModel.updateNewNoteText("Second note")
+        viewModel.addNote()
+        advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.notes.size)
+        val noteToDeleteId = viewModel.uiState.value.notes.first().id
+
+        viewModel.deleteNote(noteToDeleteId)
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.notes.size)
+        assertEquals("First note", viewModel.uiState.value.notes.first().text)
+    }
 }
