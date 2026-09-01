@@ -5,10 +5,10 @@ import androidx.compose.ui.graphics.Color
 import com.rohit.jobtracker.shared.model.Status
 
 // Brand Identity
-val BrandPrimary = Color(0xFF4F46E5) // Electric Indigo
-val BrandPrimaryContainer = Color(0xFFEEF2FF)
-val BrandDarkPrimary = Color(0xFF6366F1)
-val BrandDarkPrimaryContainer = Color(0xFF312E81)
+val BrandPrimary = Color(0xFF2563EB) // Royal Cobalt Blue
+val BrandPrimaryContainer = Color(0xFFDBEAFE)
+val BrandDarkPrimary = Color(0xFF60A5FA)
+val BrandDarkPrimaryContainer = Color(0xFF1E3A8A)
 
 // High-Contrast Status Colors
 val StatusApplied = Color(0xFF0284C7) // Sky
