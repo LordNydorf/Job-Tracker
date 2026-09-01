@@ -1,17 +1,20 @@
 package com.rohit.jobtracker.android.ui.list
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rohit.jobtracker.android.cache.LocalApplicationStore
 import com.rohit.jobtracker.android.network.ServerConfig
 import com.rohit.jobtracker.android.sync.MutationType
 import com.rohit.jobtracker.android.sync.PendingMutation
+import com.rohit.jobtracker.android.sync.SyncScheduler
 import com.rohit.jobtracker.android.ui.theme.ThemeConfig
 import com.rohit.jobtracker.android.ui.theme.ThemeMode
 import com.rohit.jobtracker.shared.api.JobTrackerApi
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Status
 import com.rohit.jobtracker.shared.model.UpdateApplicationRequest
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +29,7 @@ enum class StatusFilter(val displayName: String) {
     APPLIED("Applied"),
     SCREENING("Screening"),
     INTERVIEW("Interview"),
-    OFFER("Offer"),
+    OFFER("Offers"),
     CLOSED("Closed")
 }
 
@@ -46,7 +49,6 @@ data class ApplicationListUiState(
     val currentServerUrl: String = "",
     val currentApiKey: String = "",
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val pendingMutationsCount: Int = 0,
     val errorMessage: String? = null
 )
 
@@ -54,7 +56,9 @@ class ApplicationListViewModel(
     private val api: JobTrackerApi,
     private val localStore: LocalApplicationStore? = null,
     private val serverConfig: ServerConfig? = null,
-    private val themeConfig: ThemeConfig? = null
+    private val themeConfig: ThemeConfig? = null,
+    private val appScope: CoroutineScope? = null,
+    private val context: Context? = null
 ) : ViewModel() {
 
     private val json = Json {
@@ -71,8 +75,7 @@ class ApplicationListViewModel(
             filteredApplications = applyFilterAndSort(cached, StatusFilter.ALL, SortOption.LAST_UPDATED, ""),
             currentServerUrl = serverConfig?.getBaseUrl() ?: ServerConfig.PRESETS.first().url,
             currentApiKey = serverConfig?.getApiKey() ?: "",
-            themeMode = themeConfig?.getThemeMode() ?: ThemeMode.SYSTEM,
-            pendingMutationsCount = localStore?.pendingMutationsCount?.value ?: 0
+            themeMode = themeConfig?.getThemeMode() ?: ThemeMode.SYSTEM
         )
     )
     val uiState: StateFlow<ApplicationListUiState> = _uiState.asStateFlow()
@@ -82,13 +85,6 @@ class ApplicationListViewModel(
             viewModelScope.launch {
                 modeFlow.collect { mode ->
                     _uiState.update { it.copy(themeMode = mode) }
-                }
-            }
-        }
-        localStore?.pendingMutationsCount?.let { countFlow ->
-            viewModelScope.launch {
-                countFlow.collect { count ->
-                    _uiState.update { it.copy(pendingMutationsCount = count) }
                 }
             }
         }
@@ -199,13 +195,14 @@ class ApplicationListViewModel(
         )
         localStore?.enqueueMutation(mutation)
 
-        viewModelScope.launch {
+        val scope = appScope ?: viewModelScope
+        scope.launch {
             try {
                 val serverApp = api.updateApplication(applicationId, updateReq)
                 localStore?.saveOrUpdateApplication(serverApp)
                 localStore?.removeMutation(mutation.id)
             } catch (_: Exception) {
-                // SyncWorker will drain in background
+                context?.let { SyncScheduler.scheduleImmediateSync(it) }
             }
         }
     }

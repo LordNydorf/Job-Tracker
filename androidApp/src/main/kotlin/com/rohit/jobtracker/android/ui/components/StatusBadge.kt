@@ -25,6 +25,9 @@ import com.rohit.jobtracker.android.ui.theme.backgroundColor
 import com.rohit.jobtracker.android.ui.theme.textColor
 import com.rohit.jobtracker.shared.model.Status
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+
 @Composable
 fun StatusBadge(
     status: Status,
@@ -39,6 +42,9 @@ fun StatusBadge(
 
     Box(
         modifier = modifier
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Status: ${status.displayName}"
+            }
             .clip(shape)
             .background(bgColor)
             .border(BorderStroke(1.dp, strokeColor), shape)

@@ -31,6 +31,18 @@ import androidx.compose.ui.unit.sp
 import com.rohit.jobtracker.android.network.ServerConfig
 import com.rohit.jobtracker.android.ui.theme.ThemeMode
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+
 @Composable
 fun ServerConfigDialog(
     currentUrl: String,
@@ -40,15 +52,22 @@ fun ServerConfigDialog(
     onSave: (url: String, apiKey: String) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit = {}
 ) {
+    val haptic = LocalHapticFeedback.current
     var urlInput by remember { mutableStateOf(currentUrl) }
     var apiKeyInput by remember { mutableStateOf(currentApiKey) }
     var selectedThemeMode by remember { mutableStateOf(currentThemeMode) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Settings & Server") },
+        title = {
+            Text(
+                text = "Settings & Appearance",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 // Theme Selection Section
                 Text(
                     text = "Theme Appearance",
@@ -66,21 +85,41 @@ fun ServerConfigDialog(
                         FilterChip(
                             selected = isSelected,
                             onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 selectedThemeMode = mode
                                 onThemeModeChange(mode)
                             },
                             label = {
-                                Text(
-                                    text = mode.displayName,
-                                    fontSize = 12.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    val icon = when (mode) {
+                                        ThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
+                                        ThemeMode.LIGHT -> Icons.Default.LightMode
+                                        ThemeMode.DARK -> Icons.Default.DarkMode
+                                    }
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = mode.displayName,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                }
                             },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                                 selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                             ),
-                            shape = RoundedCornerShape(10.dp)
+                            border = BorderStroke(
+                                1.dp,
+                                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         )
                     }
                 }
@@ -105,8 +144,9 @@ fun ServerConfigDialog(
                     value = urlInput,
                     onValueChange = { urlInput = it },
                     label = { Text("Server Base URL") },
+                    placeholder = { Text("https://...") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     singleLine = true
                 )
 
@@ -114,33 +154,42 @@ fun ServerConfigDialog(
                     value = apiKeyInput,
                     onValueChange = { apiKeyInput = it },
                     label = { Text("API Key (X-API-Key)") },
+                    placeholder = { Text("Optional API key") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     singleLine = true
                 )
 
-                Text("Quick Presets:", style = MaterialTheme.typography.labelSmall)
+                Text("Quick Presets:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     ServerConfig.PRESETS.forEach { preset ->
                         SuggestionChip(
-                            onClick = { urlInput = preset.url },
-                            label = { Text(preset.label) }
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                urlInput = preset.url
+                            },
+                            label = { Text(preset.label, fontSize = 12.sp) },
+                            shape = RoundedCornerShape(10.dp)
                         )
                     }
                 }
             }
         },
         confirmButton = {
-            Button(onClick = {
-                if (urlInput.isNotBlank()) {
-                    onSave(urlInput, apiKeyInput)
-                }
-                onDismiss()
-            }) {
-                Text("Save & Connect")
+            Button(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    if (urlInput.isNotBlank()) {
+                        onSave(urlInput.trim(), apiKeyInput.trim())
+                    }
+                    onDismiss()
+                },
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Save & Connect", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

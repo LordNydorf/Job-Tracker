@@ -1,11 +1,13 @@
 package com.rohit.jobtracker.android.ui.list
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,13 +26,16 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
@@ -53,13 +58,21 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -83,12 +96,23 @@ fun ApplicationListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isDark = isAppInDarkTheme()
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val focusManager = LocalFocusManager.current
+    val searchFocusRequester = remember { FocusRequester() }
+
     var showServerDialog by remember { mutableStateOf(false) }
     var isSearchExpanded by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.loadApplications()
+    }
+
+    LaunchedEffect(isSearchExpanded) {
+        if (isSearchExpanded) {
+            searchFocusRequester.requestFocus()
+        }
     }
 
     if (showServerDialog) {
@@ -121,42 +145,20 @@ fun ApplicationListScreen(
                     }
                 },
                 actions = {
-                    if (uiState.pendingMutationsCount > 0) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                            modifier = Modifier.padding(end = 4.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Sync,
-                                    contentDescription = "Pending sync",
-                                    modifier = Modifier.size(13.dp),
-                                    tint = MaterialTheme.colorScheme.onTertiaryContainer
-                                )
-                                Text(
-                                    text = "${uiState.pendingMutationsCount} queued",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    fontSize = 10.sp
-                                )
-                            }
+                    IconButton(onClick = {
+                        isSearchExpanded = !isSearchExpanded
+                        if (!isSearchExpanded) {
+                            viewModel.updateSearchQuery("")
+                            focusManager.clearFocus()
                         }
-                    }
-
-                    IconButton(onClick = { isSearchExpanded = !isSearchExpanded }) {
+                    }) {
                         Icon(Icons.Default.Search, contentDescription = "Search Applications")
                     }
                     IconButton(onClick = { showSortMenu = true }) {
-                        Icon(Icons.Default.FilterList, contentDescription = "Sort Options")
+                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort Options")
                     }
                     IconButton(onClick = { showServerDialog = true }) {
-                        Icon(Icons.Default.Dns, contentDescription = "Server Settings")
+                        Icon(Icons.Default.Settings, contentDescription = "Settings & Appearance")
                     }
 
                     DropdownMenu(
@@ -172,6 +174,7 @@ fun ApplicationListScreen(
                                     )
                                 },
                                 onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     viewModel.setSort(sort)
                                     showSortMenu = false
                                 }
@@ -186,7 +189,10 @@ fun ApplicationListScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = onNavigateToAdd,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onNavigateToAdd()
+                },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Log Application", fontWeight = FontWeight.Bold) },
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -200,7 +206,7 @@ fun ApplicationListScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Collapsible Search Bar
+            // Collapsible Search Bar with Auto Focus & IME Handling
             AnimatedVisibility(
                 visible = isSearchExpanded,
                 enter = slideInVertically() + fadeIn(),
@@ -229,8 +235,12 @@ fun ApplicationListScreen(
                                     }
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(searchFocusRequester),
                             singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                             shape = RoundedCornerShape(16.dp)
                         )
                     }
@@ -258,7 +268,10 @@ fun ApplicationListScreen(
 
                     FilterChip(
                         selected = isSelected,
-                        onClick = { viewModel.setFilter(filter) },
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.setFilter(filter)
+                        },
                         label = {
                             Text(
                                 text = "${filter.displayName} ($count)",
@@ -329,9 +342,9 @@ fun ApplicationListScreen(
                                     Text("Retry")
                                 }
                                 Button(onClick = { showServerDialog = true }) {
-                                    Icon(Icons.Default.Dns, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Server URL")
+                                    Text("Server Settings")
                                 }
                             }
                         }
@@ -345,47 +358,69 @@ fun ApplicationListScreen(
                             .padding(32.dp),
                         contentAlignment = Alignment.Center
                     ) {
+                        val isSearchActive = uiState.searchQuery.isNotBlank()
+                        val isFilterActive = uiState.statusFilter != StatusFilter.ALL && uiState.applications.isNotEmpty()
+
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Work,
+                                imageVector = if (isFilterActive) Icons.Default.FilterAltOff else Icons.Default.Work,
                                 contentDescription = null,
                                 modifier = Modifier.size(56.dp),
                                 tint = MaterialTheme.colorScheme.outline
                             )
                             Text(
-                                text = if (uiState.searchQuery.isNotBlank()) "No matching applications found" else "No applications logged yet",
+                                text = when {
+                                    isSearchActive -> "No matching applications found"
+                                    isFilterActive -> "No applications in ${uiState.statusFilter.displayName} stage"
+                                    else -> "No applications logged yet"
+                                },
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )
                             Text(
-                                text = if (uiState.searchQuery.isNotBlank()) "Try refining your search keyword." else "Tap the button below to log your first job application.",
+                                text = when {
+                                    isSearchActive -> "Try refining your search keyword."
+                                    isFilterActive -> "You don't have any job applications currently in this status."
+                                    else -> "Tap the button below to log your first job application."
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
-                            if (uiState.searchQuery.isBlank()) {
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Button(
-                                    onClick = onNavigateToAdd,
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Log New Application")
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            when {
+                                isSearchActive -> {
+                                    OutlinedButton(
+                                        onClick = { viewModel.updateSearchQuery("") },
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Clear Search")
+                                    }
                                 }
-                            } else {
-                                Spacer(modifier = Modifier.height(6.dp))
-                                OutlinedButton(
-                                    onClick = { viewModel.updateSearchQuery("") },
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Clear Search")
+                                isFilterActive -> {
+                                    OutlinedButton(
+                                        onClick = { viewModel.setFilter(StatusFilter.ALL) },
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        Text("Show All Applications")
+                                    }
+                                }
+                                else -> {
+                                    Button(
+                                        onClick = onNavigateToAdd,
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        Icon(Icons.Default.Add, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Log New Application")
+                                    }
                                 }
                             }
                         }
@@ -417,7 +452,8 @@ fun ApplicationListScreen(
                         ) { application ->
                             ApplicationCard(
                                 application = application,
-                                onClick = { onNavigateToDetail(application.id) }
+                                onClick = { onNavigateToDetail(application.id) },
+                                modifier = Modifier.animateItem()
                             )
                         }
                     }
@@ -441,6 +477,7 @@ fun formatRelativeTime(instant: Instant): String {
         hours < 24 -> "${hours}h ago"
         days < 7 -> "${days}d ago"
         days < 30 -> "${days / 7}w ago"
-        else -> "${days / 30}mo ago"
+        days < 365 -> "${days / 30}mo ago"
+        else -> "${days / 365}y ago"
     }
 }

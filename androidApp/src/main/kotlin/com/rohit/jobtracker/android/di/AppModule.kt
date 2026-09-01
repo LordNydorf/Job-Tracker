@@ -6,20 +6,27 @@ import com.rohit.jobtracker.android.network.ServerConfig
 import com.rohit.jobtracker.android.ui.addedit.AddEditViewModel
 import com.rohit.jobtracker.android.ui.detail.ApplicationDetailViewModel
 import com.rohit.jobtracker.android.ui.list.ApplicationListViewModel
+import com.rohit.jobtracker.android.ui.theme.ThemeConfig
 import com.rohit.jobtracker.shared.api.JobTrackerApi
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
-import com.rohit.jobtracker.android.ui.theme.ThemeConfig
-
 val appModule = module {
+    single(named("AppScope")) {
+        CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    }
+
     single {
         ServerConfig(context = androidContext())
     }
@@ -58,7 +65,7 @@ val appModule = module {
         )
     }
 
-    viewModel { ApplicationListViewModel(api = get(), localStore = get(), serverConfig = get(), themeConfig = get()) }
-    viewModel { (applicationId: String?) -> AddEditViewModel(applicationId = applicationId, api = get(), localStore = get()) }
-    viewModel { (applicationId: String) -> ApplicationDetailViewModel(applicationId = applicationId, api = get(), localStore = get(), serverConfig = get(), themeConfig = get()) }
+    viewModel { ApplicationListViewModel(api = get(), localStore = get(), serverConfig = get(), themeConfig = get(), appScope = get(named("AppScope")), context = androidContext()) }
+    viewModel { (applicationId: String?) -> AddEditViewModel(applicationId = applicationId, api = get(), localStore = get(), appScope = get(named("AppScope")), context = androidContext()) }
+    viewModel { (applicationId: String) -> ApplicationDetailViewModel(applicationId = applicationId, api = get(), localStore = get(), serverConfig = get(), themeConfig = get(), appScope = get(named("AppScope")), context = androidContext()) }
 }

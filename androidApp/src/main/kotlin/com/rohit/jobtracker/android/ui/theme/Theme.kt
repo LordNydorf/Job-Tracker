@@ -24,7 +24,7 @@ fun isAppInDarkTheme(): Boolean = LocalIsDarkTheme.current
 
 private val DarkColorScheme = darkColorScheme(
     primary = BrandDarkPrimary,
-    onPrimary = Color.White,
+    onPrimary = Color(0xFF0F172A), // Slate 900 provides 9.4:1 contrast on Sky 400 (BrandDarkPrimary)
     primaryContainer = BrandDarkPrimaryContainer,
     onPrimaryContainer = Color(0xFFDBEAFE),
     secondary = Color(0xFF38BDF8),
@@ -36,8 +36,8 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = Color(0xFF1E293B),
     onSurface = Color(0xFFF8FAFC),
     onSurfaceVariant = Color(0xFF94A3B8),
-    outline = Color(0xFF334155),
-    outlineVariant = Color(0xFF1E293B)
+    outline = Color(0xFF475569),
+    outlineVariant = Color(0xFF334155) // Slate 700 for crisp 1dp card borders in dark mode
 )
 
 private val LightColorScheme = lightColorScheme(

@@ -67,11 +67,11 @@ fun Status.backgroundColor(isDark: Boolean = false): Color = when (this) {
 }
 
 fun Status.borderColor(isDark: Boolean = false): Color = when (this) {
-    Status.APPLIED -> if (isDark) StatusAppliedDark.copy(alpha = 0.3f) else StatusAppliedBorder
-    Status.SCREENING -> if (isDark) StatusScreeningDark.copy(alpha = 0.3f) else StatusScreeningBorder
-    Status.INTERVIEW -> if (isDark) StatusInterviewDark.copy(alpha = 0.3f) else StatusInterviewBorder
-    Status.OFFER -> if (isDark) StatusOfferDark.copy(alpha = 0.3f) else StatusOfferBorder
-    Status.REJECTED -> if (isDark) StatusRejectedDark.copy(alpha = 0.3f) else StatusRejectedBorder
+    Status.APPLIED -> if (isDark) StatusAppliedDark.copy(alpha = 0.5f) else StatusAppliedBorder
+    Status.SCREENING -> if (isDark) StatusScreeningDark.copy(alpha = 0.5f) else StatusScreeningBorder
+    Status.INTERVIEW -> if (isDark) StatusInterviewDark.copy(alpha = 0.5f) else StatusInterviewBorder
+    Status.OFFER -> if (isDark) StatusOfferDark.copy(alpha = 0.5f) else StatusOfferBorder
+    Status.REJECTED -> if (isDark) StatusRejectedDark.copy(alpha = 0.5f) else StatusRejectedBorder
     Status.GHOSTED -> if (isDark) StatusGhostedDarkBorder else StatusGhostedBorder
 }
 
@@ -86,6 +86,21 @@ val AvatarGradients = listOf(
     Pair(Color(0xFF0D9488), Color(0xFF2DD4BF)), // Teal
     Pair(Color(0xFFEA580C), Color(0xFFFB923C))  // Orange
 )
+
+fun getCompanyInitials(company: String): String {
+    val trimmed = company.trim()
+    if (trimmed.isEmpty()) return "JT"
+    val parts = trimmed.split(Regex("\\s+")).filter { it.isNotBlank() }
+    return when {
+        parts.size >= 2 -> {
+            val first = parts[0].firstOrNull()?.uppercaseChar() ?: ' '
+            val second = parts[1].firstOrNull()?.uppercaseChar() ?: ' '
+            "$first$second"
+        }
+        trimmed.length >= 2 -> trimmed.take(2).uppercase()
+        else -> trimmed.uppercase()
+    }
+}
 
 fun getCompanyAvatarBrush(company: String): Brush {
     val hash = kotlin.math.abs(company.hashCode())

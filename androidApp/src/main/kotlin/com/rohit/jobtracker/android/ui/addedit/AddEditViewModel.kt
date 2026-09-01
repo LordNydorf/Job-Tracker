@@ -1,16 +1,19 @@
 package com.rohit.jobtracker.android.ui.addedit
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rohit.jobtracker.android.cache.LocalApplicationStore
+import com.rohit.jobtracker.android.sync.MutationType
+import com.rohit.jobtracker.android.sync.PendingMutation
+import com.rohit.jobtracker.android.sync.SyncScheduler
 import com.rohit.jobtracker.shared.api.JobTrackerApi
+import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.CreateApplicationRequest
 import com.rohit.jobtracker.shared.model.Source
 import com.rohit.jobtracker.shared.model.Status
 import com.rohit.jobtracker.shared.model.UpdateApplicationRequest
-import com.rohit.jobtracker.android.sync.MutationType
-import com.rohit.jobtracker.android.sync.PendingMutation
-import com.rohit.jobtracker.shared.model.Application
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -48,7 +51,9 @@ data class AddEditUiState(
 class AddEditViewModel(
     private val applicationId: String? = null,
     private val api: JobTrackerApi,
-    private val localStore: LocalApplicationStore? = null
+    private val localStore: LocalApplicationStore? = null,
+    private val appScope: CoroutineScope? = null,
+    private val context: Context? = null
 ) : ViewModel() {
 
     private val json = Json {
@@ -250,15 +255,18 @@ class AddEditViewModel(
             )
             localStore?.enqueueMutation(mutation)
 
-            viewModelScope.launch {
-                _saveSuccessEvent.emit(Unit)
+            val scope = appScope ?: viewModelScope
+            scope.launch {
                 try {
                     val serverApp = api.updateApplication(applicationId, updateReq)
                     localStore?.saveOrUpdateApplication(serverApp)
                     localStore?.removeMutation(mutation.id)
                 } catch (_: Exception) {
-                    // SyncWorker will drain mutation in background
+                    context?.let { SyncScheduler.scheduleImmediateSync(it) }
                 }
+            }
+            viewModelScope.launch {
+                _saveSuccessEvent.emit(Unit)
             }
         } else {
             val targetId = UUID.randomUUID().toString()
@@ -298,15 +306,18 @@ class AddEditViewModel(
             )
             localStore?.enqueueMutation(mutation)
 
-            viewModelScope.launch {
-                _saveSuccessEvent.emit(Unit)
+            val scope = appScope ?: viewModelScope
+            scope.launch {
                 try {
                     val created = api.createApplication(createReq)
                     localStore?.saveOrUpdateApplication(created)
                     localStore?.removeMutation(mutation.id)
                 } catch (_: Exception) {
-                    // SyncWorker will drain mutation in background
+                    context?.let { SyncScheduler.scheduleImmediateSync(it) }
                 }
+            }
+            viewModelScope.launch {
+                _saveSuccessEvent.emit(Unit)
             }
         }
         return true

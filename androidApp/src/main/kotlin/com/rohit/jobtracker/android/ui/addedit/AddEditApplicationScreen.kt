@@ -69,6 +69,15 @@ import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditApplicationScreen(
@@ -78,6 +87,7 @@ fun AddEditApplicationScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
 
     var currentStep by remember { mutableIntStateOf(1) }
     val totalSteps = 3
@@ -92,11 +102,21 @@ fun AddEditApplicationScreen(
 
     val handleBackNavigation: () -> Unit = {
         if (currentStep > 1) {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             currentStep -= 1
-        } else if (isFormDirty) {
+        } else if (isFormDirty && !uiState.isEditMode) {
             showDiscardDialog = true
         } else {
             onNavigateBack()
+        }
+    }
+
+    val attemptSave: () -> Unit = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        val success = viewModel.saveApplication()
+        if (!success) {
+            currentStep = 1
+            Toast.makeText(context, "Please fill required fields in Step 1", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -204,16 +224,19 @@ fun AddEditApplicationScreen(
                         .fillMaxWidth()
                         .imePadding()
                         .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 14.dp)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (currentStep > 1) {
                             OutlinedButton(
-                                onClick = { currentStep -= 1 },
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    currentStep -= 1
+                                },
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(52.dp),
@@ -224,24 +247,41 @@ fun AddEditApplicationScreen(
                         }
 
                         if (currentStep < totalSteps) {
+                            // If in edit mode, allow saving right away from earlier steps
+                            if (uiState.isEditMode) {
+                                OutlinedButton(
+                                    onClick = attemptSave,
+                                    enabled = !uiState.isSaving,
+                                    modifier = Modifier
+                                        .weight(1.2f)
+                                        .height(52.dp),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Text("Save Now", fontWeight = FontWeight.Bold)
+                                }
+                            }
+
                             Button(
                                 onClick = {
                                     if (viewModel.validateStep(currentStep)) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         currentStep += 1
+                                    } else {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     }
                                 },
                                 modifier = Modifier
-                                    .weight(if (currentStep > 1) 1.8f else 1f)
+                                    .weight(if (currentStep > 1 && !uiState.isEditMode) 1.8f else 1.4f)
                                     .height(52.dp),
                                 shape = RoundedCornerShape(16.dp)
                             ) {
-                                Text("Next Section", fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Text("Next", fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
                             }
                         } else {
                             Button(
-                                onClick = { viewModel.saveApplication() },
+                                onClick = attemptSave,
                                 enabled = !uiState.isSaving,
                                 modifier = Modifier
                                     .weight(1.8f)
@@ -284,6 +324,50 @@ fun AddEditApplicationScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
+                // Interactive Step Pills Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val stepLabels = listOf(
+                        1 to "1. Role & Company",
+                        2 to "2. Source & Stage",
+                        3 to "3. Timeline & Nudges"
+                    )
+                    stepLabels.forEach { (stepNum, title) ->
+                        val isSelected = currentStep == stepNum
+                        val isAccessible = uiState.isEditMode || stepNum < currentStep || viewModel.validateStep(1)
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                if (isAccessible) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    currentStep = stepNum
+                                }
+                            },
+                            label = {
+                                Text(
+                                    text = title,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                            )
+                        )
+                    }
+                }
+
                 // Linear Step Indicator
                 LinearProgressIndicator(
                     progress = { currentStep.toFloat() / totalSteps.toFloat() },

@@ -73,6 +73,13 @@ import androidx.compose.material.icons.filled.Edit
 
 import com.rohit.jobtracker.shared.model.Note
 
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.input.ImeAction
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ApplicationDetailScreen(
@@ -84,6 +91,7 @@ fun ApplicationDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     var showDeleteDialog by remember { mutableStateOf(false) }
     var noteToDelete by remember { mutableStateOf<Note?>(null) }
     var showServerDialog by remember { mutableStateOf(false) }
@@ -176,7 +184,7 @@ fun ApplicationDetailScreen(
                         }
                     }
                     IconButton(onClick = { showServerDialog = true }) {
-                        Icon(Icons.Default.Dns, contentDescription = "Server Settings")
+                        Icon(Icons.Default.Settings, contentDescription = "Settings & Appearance")
                     }
                     if (uiState.application != null) {
                         IconButton(
@@ -217,6 +225,15 @@ fun ApplicationDetailScreen(
                             modifier = Modifier.weight(1f),
                             maxLines = 3,
                             shape = RoundedCornerShape(20.dp),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                            keyboardActions = KeyboardActions(
+                                onSend = {
+                                    if (uiState.newNoteText.isNotBlank() && !uiState.isAddingNote) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        viewModel.addNote()
+                                    }
+                                }
+                            ),
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                                 focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -226,7 +243,10 @@ fun ApplicationDetailScreen(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         IconButton(
-                            onClick = { viewModel.addNote() },
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.addNote()
+                            },
                             enabled = uiState.newNoteText.isNotBlank() && !uiState.isAddingNote,
                             modifier = Modifier
                                 .size(46.dp)
@@ -379,9 +399,10 @@ fun ApplicationDetailScreen(
                             suggestions.forEach { suggestion ->
                                 SuggestionChip(
                                     onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         viewModel.updateNewNoteText(suggestion)
                                         viewModel.addNote()
-                                        Toast.makeText(context, "Added note: $suggestion", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Added: $suggestion", Toast.LENGTH_SHORT).show()
                                     },
                                     label = { Text("+ $suggestion", fontSize = 12.sp, fontWeight = FontWeight.Medium) },
                                     shape = RoundedCornerShape(12.dp),
@@ -450,7 +471,8 @@ fun ApplicationDetailScreen(
                             TimelineNoteItem(
                                 note = note,
                                 isLast = index == uiState.notes.lastIndex,
-                                onDelete = { noteToDelete = note }
+                                onDelete = { noteToDelete = note },
+                                modifier = Modifier.animateItem()
                             )
                         }
                     }

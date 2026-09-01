@@ -105,13 +105,13 @@ fun TimelineNoteItem(
                     if (onDelete != null) {
                         IconButton(
                             onClick = onDelete,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(44.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.DeleteOutline,
-                                contentDescription = "Delete note",
-                                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
-                                modifier = Modifier.size(16.dp)
+                                contentDescription = "Delete note: ${note.text.take(30)}",
+                                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.8f),
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }

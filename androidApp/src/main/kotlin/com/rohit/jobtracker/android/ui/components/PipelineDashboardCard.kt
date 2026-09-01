@@ -1,6 +1,8 @@
 package com.rohit.jobtracker.android.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -24,16 +27,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rohit.jobtracker.android.ui.list.StatusFilter
+import com.rohit.jobtracker.android.ui.theme.isAppInDarkTheme
 import com.rohit.jobtracker.shared.model.Application
 import com.rohit.jobtracker.shared.model.Status
-
-import com.rohit.jobtracker.android.ui.theme.isAppInDarkTheme
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 
 @Composable
 fun PipelineDashboardCard(
@@ -149,10 +152,14 @@ fun PipelineStageItem(
 
     Box(
         modifier = modifier
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Filter by $label: $count applications"
+            }
             .clip(shape)
             .background(itemBg)
             .border(BorderStroke(1.dp, itemStroke), shape)
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, role = Role.Button)
+            .heightIn(min = 52.dp)
             .padding(vertical = 12.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {

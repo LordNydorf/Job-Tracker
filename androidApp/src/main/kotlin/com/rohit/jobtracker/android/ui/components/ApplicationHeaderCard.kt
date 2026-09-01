@@ -39,6 +39,9 @@ import com.rohit.jobtracker.shared.model.Application
 
 import androidx.compose.foundation.BorderStroke
 
+import com.rohit.jobtracker.android.ui.theme.getCompanyInitials
+import com.rohit.jobtracker.shared.model.Status
+
 @Composable
 fun ApplicationHeaderCard(
     application: Application,
@@ -46,8 +49,9 @@ fun ApplicationHeaderCard(
     modifier: Modifier = Modifier
 ) {
     val isDark = isAppInDarkTheme()
+    val initials = getCompanyInitials(application.company)
     val avatarBrush = getCompanyAvatarBrush(application.company)
-    val initial = application.company.firstOrNull()?.uppercaseChar()?.toString() ?: "J"
+    val isClosed = application.status == Status.OFFER || application.status == Status.REJECTED || application.status == Status.GHOSTED
     val shape = RoundedCornerShape(22.dp)
 
     Card(
@@ -57,7 +61,7 @@ fun ApplicationHeaderCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -77,9 +81,9 @@ fun ApplicationHeaderCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = initial,
+                        text = initials,
                         color = Color.White,
-                        fontSize = 24.sp,
+                        fontSize = if (initials.length > 1) 19.sp else 24.sp,
                         fontWeight = FontWeight.Black
                     )
                 }
@@ -193,11 +197,15 @@ fun ApplicationHeaderCard(
                     imageVector = Icons.Default.NotificationsActive,
                     contentDescription = null,
                     modifier = Modifier.size(15.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = if (isClosed) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = if (application.reminderDays != null) "Follow-up nudge: every ${application.reminderDays} days" else "No reminder configured",
+                    text = when {
+                        isClosed -> "Pipeline complete (reminders inactive)"
+                        application.reminderDays != null -> "Follow-up nudge: every ${application.reminderDays} days"
+                        else -> "No reminder configured"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
                 )

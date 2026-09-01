@@ -1,11 +1,13 @@
 package com.rohit.jobtracker.android.ui.detail
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rohit.jobtracker.android.cache.LocalApplicationStore
 import com.rohit.jobtracker.android.network.ServerConfig
 import com.rohit.jobtracker.android.sync.MutationType
 import com.rohit.jobtracker.android.sync.PendingMutation
+import com.rohit.jobtracker.android.sync.SyncScheduler
 import com.rohit.jobtracker.android.ui.theme.ThemeConfig
 import com.rohit.jobtracker.android.ui.theme.ThemeMode
 import com.rohit.jobtracker.shared.api.JobTrackerApi
@@ -14,6 +16,7 @@ import com.rohit.jobtracker.shared.model.CreateNoteRequest
 import com.rohit.jobtracker.shared.model.Note
 import com.rohit.jobtracker.shared.model.Status
 import com.rohit.jobtracker.shared.model.UpdateApplicationRequest
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -46,7 +49,9 @@ class ApplicationDetailViewModel(
     private val api: JobTrackerApi,
     private val localStore: LocalApplicationStore? = null,
     private val serverConfig: ServerConfig? = null,
-    private val themeConfig: ThemeConfig? = null
+    private val themeConfig: ThemeConfig? = null,
+    private val appScope: CoroutineScope? = null,
+    private val context: Context? = null
 ) : ViewModel() {
 
     private val json = Json {
@@ -155,13 +160,14 @@ class ApplicationDetailViewModel(
         )
         localStore?.enqueueMutation(mutation)
 
-        viewModelScope.launch {
+        val scope = appScope ?: viewModelScope
+        scope.launch {
             try {
                 val serverApp = api.updateApplication(applicationId, updateReq)
                 localStore?.saveOrUpdateApplication(serverApp)
                 localStore?.removeMutation(mutation.id)
             } catch (_: Exception) {
-                // Background SyncWorker will retry
+                context?.let { SyncScheduler.scheduleImmediateSync(it) }
             }
         }
     }
@@ -202,13 +208,14 @@ class ApplicationDetailViewModel(
         )
         localStore?.enqueueMutation(mutation)
 
-        viewModelScope.launch {
+        val scope = appScope ?: viewModelScope
+        scope.launch {
             try {
                 val serverNote = api.addNote(applicationId, createNoteReq)
                 localStore?.addCachedNote(applicationId, serverNote)
                 localStore?.removeMutation(mutation.id)
             } catch (_: Exception) {
-                // Background SyncWorker will retry
+                context?.let { SyncScheduler.scheduleImmediateSync(it) }
             }
         }
     }
@@ -228,14 +235,15 @@ class ApplicationDetailViewModel(
         )
         localStore?.enqueueMutation(mutation)
 
-        viewModelScope.launch {
+        val scope = appScope ?: viewModelScope
+        scope.launch {
             try {
                 val success = api.deleteNote(applicationId, noteId)
                 if (success) {
                     localStore?.removeMutation(mutation.id)
                 }
             } catch (_: Exception) {
-                // Background SyncWorker will retry
+                context?.let { SyncScheduler.scheduleImmediateSync(it) }
             }
         }
     }
@@ -250,16 +258,20 @@ class ApplicationDetailViewModel(
         )
         localStore?.enqueueMutation(mutation)
 
-        viewModelScope.launch {
-            _deleteSuccessEvent.emit(Unit)
+        val scope = appScope ?: viewModelScope
+        scope.launch {
             try {
                 val success = api.deleteApplication(applicationId)
                 if (success) {
                     localStore?.removeMutation(mutation.id)
                 }
             } catch (_: Exception) {
-                // Background SyncWorker will retry
+                context?.let { SyncScheduler.scheduleImmediateSync(it) }
             }
+        }
+
+        viewModelScope.launch {
+            _deleteSuccessEvent.emit(Unit)
         }
     }
 }

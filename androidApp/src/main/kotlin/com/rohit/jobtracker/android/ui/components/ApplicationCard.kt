@@ -39,6 +39,11 @@ import kotlinx.datetime.Clock
 
 import com.rohit.jobtracker.android.ui.theme.isAppInDarkTheme
 
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.rohit.jobtracker.android.ui.theme.getCompanyInitials
+
 @Composable
 fun ApplicationCard(
     application: Application,
@@ -46,7 +51,7 @@ fun ApplicationCard(
     modifier: Modifier = Modifier
 ) {
     val isDark = isAppInDarkTheme()
-    val initial = application.company.firstOrNull()?.uppercaseChar()?.toString() ?: "J"
+    val initials = getCompanyInitials(application.company)
     val avatarBrush = getCompanyAvatarBrush(application.company)
 
     val now = Clock.System.now()
@@ -57,7 +62,11 @@ fun ApplicationCard(
     val shape = RoundedCornerShape(20.dp)
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "${application.company}, ${application.role}, Status ${application.status.displayName}${if (isOverdue) ", Follow-up overdue" else ""}"
+            },
         shape = shape,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         colors = CardDefaults.cardColors(
@@ -81,13 +90,14 @@ fun ApplicationCard(
                     modifier = Modifier
                         .size(46.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(avatarBrush),
+                        .background(avatarBrush)
+                        .clearAndSetSemantics { },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = initial,
+                        text = initials,
                         color = Color.White,
-                        fontSize = 20.sp,
+                        fontSize = if (initials.length > 1) 16.sp else 20.sp,
                         fontWeight = FontWeight.Black
                     )
                 }
