@@ -50,6 +50,21 @@
 - Offline write queue: client-generated UUIDs, optimistic local writes via LocalApplicationStore, WorkManager-backed background sync to survive app backgrounding/kill, pending/synced status indicator in the UI. Fixes Render free-tier cold-start blocking writes.
 - Light mode visual revamp: the existing light theme variant needs its own design pass (colors/contrast), separate from the dark-mode-first design work already done.
 
+## Phase 1 (v2) — Offline Write Queue & Background Sync Engine
+- [ ] **Client-Side UUIDs**: Support client-generated UUID identifiers on application and note creation across `:shared`, `:androidApp`, and `:backend` to enable instantaneous offline insertion without waiting for server ID generation.
+- [ ] **Pending Mutations Queue**: Implement a persistent mutation queue in `LocalApplicationStore` (`PendingMutation`: `CREATE_APP`, `UPDATE_APP`, `DELETE_APP`, `ADD_NOTE`, `DELETE_NOTE`).
+- [ ] **Optimistic StateFlow Updates**: ViewModels update local cache immediately so all user interactions (adds, status drags/taps, note logging, deletions) reflect with 0ms latency.
+- [ ] **WorkManager Background Sync**: Create `SyncWorker` with network constraints (`NetworkType.CONNECTED`), retry exponential backoff, and periodic/one-time background dispatch to survive app kills and cold starts.
+- [ ] **Sync Status UI Indicator**: Add a subtle cloud sync status icon in TopAppBar / Detail headers (`Synced`, `Syncing...`, `Offline - X changes queued`).
+- [ ] **Unit Tests**: Add offline queue serialization, retry handling, and conflict reconciliation tests in `:androidApp:testDebugUnitTest`.
+
+## Phase 2 (v2) — Light Mode Visual Revamp & Accessibility
+- [ ] **Light Palette Tokens**: Redesign light theme tokens in `Color.kt` and `Theme.kt` with curated surface tones, distinct card elevations, and crisp boundary borders (`#E2E8F0` / `#CBD5E1`).
+- [ ] **WCAG AA/AAA Contrast Audit**: Ensure all text, secondary labels, and status badges meet $\ge 4.5:1$ contrast against pure white cards and soft slate backgrounds (`#F8FAFC`).
+- [ ] **Status Badge Refinement**: Tune light-mode status badge background/text pairings (`Applied`, `Screening`, `Interview`, `Offer`, `Rejected`, `Ghosted`) for maximum legibility and visual pop.
+- [ ] **Wizard & Detail Polish**: Refine multi-step wizard step indicators, text field outlines, and avatar gradient contrast in light appearance mode.
+- [ ] **Dynamic Theme Switching Verification**: Verify smooth visual transitions across Light, Dark, and System Default modes without layout jitter or unstyled frames.
+
 ### Later / Parking Lot
 - iOS app via Compose Multiplatform/SwiftUI — needs a Mac, real second UI layer, project-sized on its own
 - Multi-user auth — no second user exists yet; revisit only if that changes
