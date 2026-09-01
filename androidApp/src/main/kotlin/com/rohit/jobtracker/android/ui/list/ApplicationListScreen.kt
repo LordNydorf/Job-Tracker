@@ -340,6 +340,16 @@ fun ApplicationListScreen(
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text("Log New Application")
                                 }
+                            } else {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                OutlinedButton(
+                                    onClick = { viewModel.updateSearchQuery("") },
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Clear Search")
+                                }
                             }
                         }
                     }

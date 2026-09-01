@@ -46,6 +46,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import com.rohit.jobtracker.android.ui.theme.textColor
 import com.rohit.jobtracker.shared.model.Source
@@ -93,6 +95,7 @@ fun ApplicationStepOne(
         },
         isError = companyError != null,
         supportingText = companyError?.let { { Text(it) } },
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         singleLine = true
@@ -112,6 +115,7 @@ fun ApplicationStepOne(
         },
         isError = roleError != null,
         supportingText = roleError?.let { { Text(it) } },
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         singleLine = true
@@ -198,6 +202,7 @@ fun ApplicationStepOne(
                     tint = MaterialTheme.colorScheme.primary
                 )
             },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             singleLine = true
@@ -443,6 +448,7 @@ fun ApplicationStepThree(
                 tint = MaterialTheme.colorScheme.primary
             )
         },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         singleLine = true

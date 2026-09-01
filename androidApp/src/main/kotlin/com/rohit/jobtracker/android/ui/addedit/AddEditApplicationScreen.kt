@@ -28,7 +28,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
+import androidx.activity.compose.BackHandler
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -64,7 +67,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
-
 import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,9 +83,24 @@ fun AddEditApplicationScreen(
     val totalSteps = 3
 
     var showDatePicker by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
+    val isFormDirty = uiState.company.isNotBlank() || uiState.role.isNotBlank() || uiState.salary.isNotBlank() || uiState.jobLink.isNotBlank()
+
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = uiState.dateApplied.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds()
     )
+
+    val handleBackNavigation: () -> Unit = {
+        if (currentStep > 1) {
+            currentStep -= 1
+        } else if (isFormDirty) {
+            showDiscardDialog = true
+        } else {
+            onNavigateBack()
+        }
+    }
+
+    BackHandler(onBack = handleBackNavigation)
 
     LaunchedEffect(Unit) {
         viewModel.saveSuccessEvent.collect {
@@ -91,6 +108,30 @@ fun AddEditApplicationScreen(
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             onNavigateBack()
         }
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Discard Changes?") },
+            text = { Text("You have unsaved changes in this application. Are you sure you want to discard them?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDiscardDialog = false
+                        onNavigateBack()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Discard")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text("Keep Editing")
+                }
+            }
+        )
     }
 
     if (showDatePicker) {
@@ -142,13 +183,7 @@ fun AddEditApplicationScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        if (currentStep > 1) {
-                            currentStep -= 1
-                        } else {
-                            onNavigateBack()
-                        }
-                    }) {
+                    IconButton(onClick = handleBackNavigation) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Go back")
                     }
                 },

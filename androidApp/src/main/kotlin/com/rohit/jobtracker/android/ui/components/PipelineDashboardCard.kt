@@ -23,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +39,7 @@ fun PipelineDashboardCard(
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
+    val haptic = LocalHapticFeedback.current
     val appliedCount = applications.count { it.status == Status.APPLIED }
     val screeningCount = applications.count { it.status == Status.SCREENING }
     val interviewCount = applications.count { it.status == Status.INTERVIEW }
@@ -83,28 +86,40 @@ fun PipelineDashboardCard(
                     count = appliedCount,
                     label = "Applied",
                     color = Color(0xFF38BDF8),
-                    onClick = { onFilterSelected(StatusFilter.APPLIED) },
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onFilterSelected(StatusFilter.APPLIED)
+                    },
                     modifier = Modifier.weight(1f)
                 )
                 PipelineStageItem(
                     count = screeningCount,
                     label = "Screening",
                     color = Color(0xFFF59E0B),
-                    onClick = { onFilterSelected(StatusFilter.SCREENING) },
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onFilterSelected(StatusFilter.SCREENING)
+                    },
                     modifier = Modifier.weight(1f)
                 )
                 PipelineStageItem(
                     count = interviewCount,
                     label = "Interview",
                     color = Color(0xFFA855F7),
-                    onClick = { onFilterSelected(StatusFilter.INTERVIEW) },
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onFilterSelected(StatusFilter.INTERVIEW)
+                    },
                     modifier = Modifier.weight(1f)
                 )
                 PipelineStageItem(
                     count = offerCount,
                     label = "Offers",
                     color = Color(0xFF10B981),
-                    onClick = { onFilterSelected(StatusFilter.OFFER) },
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onFilterSelected(StatusFilter.OFFER)
+                    },
                     modifier = Modifier.weight(1f)
                 )
             }

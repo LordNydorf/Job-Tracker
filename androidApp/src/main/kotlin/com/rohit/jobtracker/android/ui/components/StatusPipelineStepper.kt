@@ -21,6 +21,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,6 +40,7 @@ fun StatusPipelineStepper(
 ) {
     val isDark = isSystemInDarkTheme()
     val scrollState = rememberScrollState()
+    val haptic = LocalHapticFeedback.current
 
     Row(
         modifier = modifier
@@ -56,7 +59,12 @@ fun StatusPipelineStepper(
 
             FilterChip(
                 selected = isSelected,
-                onClick = { if (!isSelected) onStatusSelected(status) },
+                onClick = {
+                    if (!isSelected) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onStatusSelected(status)
+                    }
+                },
                 enabled = enabled,
                 label = {
                     Text(
