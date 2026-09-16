@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -212,12 +213,17 @@ fun ApplicationDetailScreen(
                     shadowElevation = 8.dp,
                     modifier = Modifier.imePadding().navigationBarsPadding()
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
                     ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .widthIn(max = 720.dp)
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                         OutlinedTextField(
                             value = uiState.newNoteText,
                             onValueChange = { viewModel.updateNewNoteText(it) },
@@ -269,6 +275,7 @@ fun ApplicationDetailScreen(
                                 )
                             }
                         }
+                    }
                     }
                 }
             }
@@ -337,13 +344,19 @@ fun ApplicationDetailScreen(
             else -> {
                 val app = uiState.application!!
 
-                LazyColumn(
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.TopCenter
                 ) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .widthIn(max = 720.dp)
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
                     // 1. Pipeline Stepper Section
                     item(key = "stage_stepper") {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -484,4 +497,5 @@ fun ApplicationDetailScreen(
             }
         }
     }
+}
 }

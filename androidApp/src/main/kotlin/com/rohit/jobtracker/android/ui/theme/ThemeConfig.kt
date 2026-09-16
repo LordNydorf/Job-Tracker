@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class ThemeMode(val displayName: String) {
-    SYSTEM("System Default"),
+    SYSTEM("System"),
     LIGHT("Light"),
     DARK("Dark")
 }
