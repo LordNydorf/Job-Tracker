@@ -22,13 +22,10 @@ fun Application.configureStatusPages() {
             )
         }
         exception<Throwable> { call, cause ->
-            cause.printStackTrace()
+            call.application.environment.log.error("Unhandled internal server error", cause)
             call.respond(
                 HttpStatusCode.InternalServerError,
-                mapOf(
-                    "error" to (cause.message ?: "An unexpected internal server error occurred"),
-                    "cause" to (cause.cause?.message ?: "none")
-                )
+                mapOf("error" to "An unexpected internal server error occurred")
             )
         }
     }

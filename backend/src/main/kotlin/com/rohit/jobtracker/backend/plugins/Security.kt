@@ -6,6 +6,7 @@ import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.install
 import io.ktor.server.request.path
 import io.ktor.server.response.respond
+import java.security.MessageDigest
 
 fun Application.configureSecurity(apiKey: String? = null) {
     val isDevMode = System.getenv("ENVIRONMENT") == "development" || System.getProperty("io.ktor.development") == "true" || apiKey != null
@@ -29,7 +30,11 @@ fun Application.configureSecurity(apiKey: String? = null) {
             }
 
             val providedKey = call.request.headers["X-API-Key"]
-            if (providedKey == null || providedKey != configuredKey) {
+            val isKeyValid = providedKey != null && MessageDigest.isEqual(
+                providedKey.toByteArray(Charsets.UTF_8),
+                configuredKey.toByteArray(Charsets.UTF_8)
+            )
+            if (!isKeyValid) {
                 call.respond(
                     HttpStatusCode.Unauthorized,
                     mapOf("error" to "Invalid or missing X-API-Key header")
